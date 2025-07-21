@@ -6,6 +6,7 @@ from git import Repo
 GIT_REPO = "https://github.com/mysteriousbug/dlp-audit.git"
 GIT_LOCAL_PATH = "dlp-audit"
 GIT_BRANCH = "main"
+GITHUB_TOKEN = st.secrets["token"]
 
 def clone_or_pull_repo():
     if not os.path.exists(GIT_LOCAL_PATH):
