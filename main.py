@@ -11,12 +11,13 @@ if uploaded_files:
         st.write(f" 🗎 {file.name}")
 
     try:
-        content = file.read().decode("utf-8")
+        content = file.read()
         #st.text_area(f"Content of {file.name}:", content, height = 150)
         st.download_button(label=f"Download {file.name}", data=content, file_name = file.name, mime="application/octet-stream")
 
     except Exception:
-            st.warning(f"Cannot display contents of {file.name} ")
+            st.warning("")
+            #st.warning(f"Cannot display contents of {file.name} ")
 
 else:
      st.info("No files uploaded yet.")
