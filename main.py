@@ -34,7 +34,7 @@ uploaded_file = st.file_uploader("Choose a file")
 if uploaded_file:
     clone_or_pull_repo()
 
-    save_path = os.path.join(uploaded_file.name)
+    save_path = os.path.join(uploads_folder, uploaded_file.name)
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     with open(save_path, "wb") as f:
