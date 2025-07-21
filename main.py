@@ -1,23 +1,43 @@
-import streamlit as st
+import streamlit as st 
+import os
+from git import Repo
 
-st.title("File Uploader")
+# --- GitHub Configuration ---
+GIT_REPO = "https://github.com/mysteriousbug/dlp-audit.git"
+GIT_LOCAL_PATH = "dlp-audit"
+GIT_BRANCH = "main"
 
-uploaded_files = st.file_uploader("Choose files", accept_multiple_files=True)
+def clone_or_pull_repo():
+    if not os.path.exists(GIT_LOCAL_PATH):
+        Repo.clone_from(
+            GIT_REPO.replace("https://", f"https://{GITHUB_TOKEN}@"),
+            GIT_LOCAL_PATH,
+            branch=GIT_BRANCH
+        )
+    else:
+        repo = Repo(GIT_LOCAL_PATH)
+        repo.remotes.origin.pull()
 
-if uploaded_files:
-    st.success(f"{len(uploaded_files)} file(s) uploaded")
+def commit_and_push_file(local_file_path, commit_msg="Upload via Streamlit"):
+    repo = Repo(GIT_LOCAL_PATH)
+    repo.git.add(local_file_path)
+    repo.index.commit(commit_msg)
+    origin = repo.remote(name="origin")
+    origin.push()
 
-    for file in uploaded_files:
-        st.write(f" 🗎 {file.name}")
+# --- Streamlit UI ---
+st.title("📤 Upload and Save File to GitHub Repo")
 
-    try:
-        content = file.read()
-        #st.text_area(f"Content of {file.name}:", content, height = 150)
-        st.download_button(label=f"Download {file.name}", data=content, file_name = file.name, mime="application/octet-stream")
+uploaded_file = st.file_uploader("Choose a file")
 
-    except Exception:
-            st.warning("")
-            #st.warning(f"Cannot display contents of {file.name} ")
+if uploaded_file:
+    clone_or_pull_repo()
 
-else:
-     st.info("No files uploaded yet.")
+    save_path = os.path.join(GIT_LOCAL_PATH, "uploads", uploaded_file.name)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+    with open(save_path, "wb") as f:
+        f.write(uploaded_file.read())
+
+    commit_and_push_file(save_path)
+    st.success(f"✅ Uploaded and pushed `{uploaded_file.name}` to GitHub!")
