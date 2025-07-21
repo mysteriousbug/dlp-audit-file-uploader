@@ -1,44 +1,17 @@
 import streamlit as st 
+import boto3
 import os
-from git import Repo
 
-# --- GitHub Configuration ---
-GIT_REPO = "https://github.com/mysteriousbug/dlp-audit.git"
-GIT_LOCAL_PATH = "temp"
-GIT_BRANCH = "main"
-GITHUB_TOKEN = st.secrets["token"]
+# AWS credentials from environment or ~/.aws/credentials
+s3 = boto3.client('s3')
+bucket_name = "your-s3-bucket-name"
 
-def clone_or_pull_repo():
-    if not os.path.exists(GIT_LOCAL_PATH):
-        Repo.clone_from(
-            GIT_REPO.replace("https://", f"https://{GITHUB_TOKEN}@"),
-            GIT_LOCAL_PATH,
-            branch=GIT_BRANCH
-        )
-    else:
-        repo = Repo(GIT_LOCAL_PATH)
-        repo.remotes.origin.pull()
+st.title("📤 Upload to AWS S3")
 
-def commit_and_push_file(local_file_path, commit_msg="Upload via Streamlit"):
-    repo = Repo(GIT_LOCAL_PATH)
-    repo.git.add(local_file_path)
-    repo.index.commit(commit_msg)
-    origin = repo.remote(name="origin")
-    origin.push()
+uploaded_files = st.file_uploader("Choose files", accept_multiple_files=True)
 
-# --- Streamlit UI ---
-st.title("📤 Upload and Save File to GitHub Repo")
-
-uploaded_file = st.file_uploader("Choose a file")
-
-if uploaded_file:
-    clone_or_pull_repo()
-
-    save_path = os.path.join(GIT_LOCAL_PATH, "uploads", uploaded_file.name)
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-    with open(save_path, "wb") as f:
-        f.write(uploaded_file.read())
-
-    commit_and_push_file(save_path)
-    st.success(f"✅ Uploaded and pushed `{uploaded_file.name}` to GitHub!")
+if uploaded_files:
+    for file in uploaded_files:
+        file_content = file.read()
+        s3.upload_fileobj(file, bucket_name, file.name)
+        st.success(f"Uploaded {file.name} to S3 bucket '{bucket_name}'")
