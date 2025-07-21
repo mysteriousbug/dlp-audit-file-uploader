@@ -2,7 +2,10 @@ import streamlit as st
 
 st.title("File Uploader")
 
-uploaded_file = st.file_uploader("Choose a file", type = None)
+uploaded_files = st.file_uploader("Choose files", accept_multiple_files=True)
 
-if uploaded_file is not None:
-    st.success(f"File Uploaded Successfully: {uploaded_file.name}")
+if uploaded_files:
+    st.success(f"{len(uploaded_files)} file(s) uploaded")
+
+for file in uploaded_files:
+    st.write(f"{file.name}")
