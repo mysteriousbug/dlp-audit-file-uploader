@@ -12,7 +12,8 @@ if uploaded_files:
 
     try:
         content = file.read().decode("utf-8")
-        st.text_area(f"Content of {file.name}:", content, height = 150)
+        #st.text_area(f"Content of {file.name}:", content, height = 150)
+        st.download_button(label=f"Download {file.name}", data=content, file_name = file.name, mime="application/octet-stream")
 
     except Exception:
             st.warning(f"Cannot display contents of {file.name} ")
