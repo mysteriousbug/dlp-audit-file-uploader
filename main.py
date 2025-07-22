@@ -2,11 +2,19 @@ import streamlit as st
 from pymongo import MongoClient
 import gridfs
 import io
+from urllib.parse import quote_plus
 
 # Load MongoDB secrets
-uri = st.secrets["mongodb"]["uri"]
-db_name = st.secrets["mongodb"]["db"]
-collection_name = st.secrets["mongodb"]["collection"]
+us = st.secrets["mongodb"]["us"]
+pwd = st.secrets["mongodb"]["pwd"]
+username = quote_plus(us)
+password = quote_plus(pwd)
+
+cluster = 'cluster0.pfago9a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
+authSource = '<authSource>'
+authMechanism = '<authMechanism>'
+uri = 'mongodb+srv://' + username + ':' + password + '@' + cluster
+
 
 # Connect to MongoDB and GridFS
 client = MongoClient(uri)
