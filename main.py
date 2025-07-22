@@ -9,6 +9,7 @@ us = st.secrets["mongodb"]["us"]
 pwd = st.secrets["mongodb"]["pwd"]
 username = quote_plus(us)
 password = quote_plus(pwd)
+db_name = 'mydb'
 
 cluster = 'cluster0.pfago9a.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
 authSource = '<authSource>'
