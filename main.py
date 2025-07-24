@@ -9,7 +9,7 @@ import pandas as pd
 
 # MongoDB Configuration
 # Option 1: Local MongoDB
-# MONGO_URI = "mongodb://localhost:27017/"
+MONGO_URI = st.secrets["MONGO_URI"]
 
 # Option 2: MongoDB Atlas (replace with your connection string)
 #MONGO_URI = "mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority"
