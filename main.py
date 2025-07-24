@@ -8,16 +8,7 @@ from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# MongoDB Configuration
-# Option 1: Local MongoDB
 MONGO_URI = st.secrets["MONGO_URI"]
-
-# Option 2: MongoDB Atlas (replace with your connection string)
-#MONGO_URI = "mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority"
-
-# Option 3: If you have SSL issues, try this format:
-# MONGO_URI = "mongodb+srv://username:password@cluster.mongodb.net/?ssl=true&ssl_cert_reqs=CERT_NONE"
-
 DATABASE_NAME = "file_storage_poc"
 COLLECTION_NAME = "uploaded_files"
 
@@ -114,8 +105,6 @@ def main():
         upload_page(fs)
     elif page == "View & Download Files":
         download_page(fs)
-    elif page == "Analytics":
-        analytics_page(fs)
 
 def upload_page(fs):
     """File upload page"""
