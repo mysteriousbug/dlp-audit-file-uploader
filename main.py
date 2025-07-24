@@ -1,3 +1,5 @@
+import streamlit as st
+
 @st.cache_resource
 def init_mongodb():
     """Initialize MongoDB connection and GridFS"""
@@ -20,7 +22,6 @@ def init_mongodb():
         st.error(f"Failed to connect to MongoDB Atlas: {str(e)}")
         return None, None, None
 
-import streamlit as st
 import pymongo
 from pymongo import MongoClient
 import gridfs
