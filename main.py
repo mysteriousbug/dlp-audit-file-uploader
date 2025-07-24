@@ -18,7 +18,9 @@ def init_mongodb():
         return client, db, fs
     except Exception as e:
         st.error(f"Failed to connect to MongoDB Atlas: {str(e)}")
-        return None, None, Noneimport streamlit as st
+        return None, None, None
+
+import streamlit as st
 import pymongo
 from pymongo import MongoClient
 import gridfs
