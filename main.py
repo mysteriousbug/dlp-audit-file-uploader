@@ -8,7 +8,7 @@ from datetime import datetime
 import pandas as pd
 
 # MongoDB Configuration
-MONGO_URI = "mongodb://localhost:27017/"  # Change this to your MongoDB URI
+MONGO_URI = st.secrets["uri"]  # Change this to your MongoDB URI
 DATABASE_NAME = "file_storage_poc"
 COLLECTION_NAME = "uploaded_files"
 
