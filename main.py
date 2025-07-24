@@ -1,4 +1,24 @@
-import streamlit as st
+@st.cache_resource
+def init_mongodb():
+    """Initialize MongoDB connection and GridFS"""
+    try:
+        # MongoDB Atlas connection with proper SSL handling
+        client = MongoClient(
+            MONGO_URI,
+            serverSelectionTimeoutMS=10000,
+            connectTimeoutMS=10000,
+            socketTimeoutMS=10000
+        )
+        
+        # Test the connection
+        client.admin.command('ping')
+        db = client[DATABASE_NAME]
+        fs = GridFS(db)
+        st.success("✅ Successfully connected to MongoDB Atlas")
+        return client, db, fs
+    except Exception as e:
+        st.error(f"Failed to connect to MongoDB Atlas: {str(e)}")
+        return None, None, Noneimport streamlit as st
 import pymongo
 from pymongo import MongoClient
 import gridfs
@@ -7,8 +27,13 @@ import io
 from datetime import datetime
 import pandas as pd
 
-# MongoDB Configuration
-MONGO_URI = st.secrets["uri"]  # Change this to your MongoDB URI
+# MongoDB Configuration - using Streamlit secrets
+try:
+    MONGO_URI = st.secrets["MONGO_URI"]
+except KeyError:
+    st.error("MongoDB URI not found in secrets. Please add MONGO_URI to your Streamlit secrets.")
+    st.stop()
+
 DATABASE_NAME = "file_storage_poc"
 COLLECTION_NAME = "uploaded_files"
 
