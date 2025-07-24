@@ -20,7 +20,7 @@ import pandas as pd
 DATABASE_NAME = "file_storage_poc"
 COLLECTION_NAME = "uploaded_files"
 
-@streamlit.cache_resource
+#@streamlit.cache_resource
 def init_mongodb():
     """Initialize MongoDB connection and GridFS"""
     try:
