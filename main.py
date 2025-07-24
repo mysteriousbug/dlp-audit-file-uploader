@@ -6,6 +6,7 @@ from gridfs import GridFS
 import io
 from datetime import datetime
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # MongoDB Configuration
 # Option 1: Local MongoDB
@@ -322,7 +323,7 @@ def analytics_page(fs):
     
     # File size distribution
     st.subheader("File Size Distribution")
-    st.histogram(df['size'], bins=20)
+    st.pyplot(df['size'], bins=20)
     
     # Recent uploads
     st.subheader("Recent Uploads")
