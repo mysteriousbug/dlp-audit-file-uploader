@@ -17,6 +17,8 @@ def init_mongodb():
     """Initialize MongoDB connection and GridFS"""
     try:
         client = MongoClient(MONGO_URI)
+        # Test the connection
+        client.admin.command('ping')
         db = client[DATABASE_NAME]
         fs = GridFS(db)
         return client, db, fs
@@ -90,7 +92,7 @@ def main():
     # Initialize MongoDB connection
     client, db, fs = init_mongodb()
     
-    if not all([client, db, fs]):
+    if client is None or db is None or fs is None:
         st.error("❌ Cannot connect to MongoDB. Please check your connection.")
         st.info("Make sure MongoDB is running and the connection URI is correct.")
         return
