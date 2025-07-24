@@ -99,7 +99,7 @@ def main():
     
     # Sidebar for navigation
     st.sidebar.title("Navigation")
-    page = st.sidebar.selectbox("Select Page", ["Upload Files", "View & Download Files", "Analytics"])
+    page = st.sidebar.selectbox("Select Page", ["Upload Files", "View & Download Files"])
     
     if page == "Upload Files":
         upload_page(fs)
