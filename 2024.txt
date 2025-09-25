@@ -1,0 +1,20 @@
+No.	Coverage	Questionnaire 	Did interviewee Respond?	Details of response 
+1	Engagement	Were all actionable agreed in 2023 addressed? Do you think there is any concern from My Voice 2023 that is not addressed?		
+2	Engagement	What is your primary motivating factor at work in the current team? ( e.g.: benefit package, salary, people, opportunity, culture, flexibility etc)		
+3	Engagement	What should your manager do more to sustain / retain the trust on them?		
+4	Experience	"Do you feel that GOO-TBO is focussed mainly on project timelines / deliverables rather than employee well-being ? 
+Do you feel that the people leader is considerate of emergency situation with the team member?"		
+5	Inclusion	Does your leader take into account your interest with your job through the scheduled 1-1 sessions? How fulfilling are those sessions?		
+6	Experience	Do you feel there is a work personal-life balance? Is there any way your immediate team or People Leader can contribute in enhancing your experience?		
+7	Inclusion	Do you feel that GOO-TBO has demonstrated enough in promoting unique diversity (gender, racial, culture, etc.) to the team?		
+8	Engagement	Is the training adequate and are changes communicated effectively?		
+9	Experience	How comfortable are you to independently execute audits? What support you expect from your People Leader?		
+10	Inclusion	Do you feel that the GIA-TBO supports the new joiner in settling in? Any recommendations to sustain / improvise the training needs and requirements?		
+11	Engagement	Do you think the skill sets of staffs are rightly used and highlighted within the team?		
+12	Experience	Do you feel that audits are allocated based on skills, background, interest during scheduling? Do you feel that the hours allocated to the audit are sufficient, do you have instances of scope creep? 		
+13	Experience	Do you feel that some critical information deemed to be circulated to everyone is often missed from circulation or there is a lack of process in the area of communications ?		
+14	Engagement	Do you feel that there is team cohesiveness when working and people are willing to help each other? 		
+15	Inclusion	Are you included in all key team activities or critical decisions pertaining to your portfolio? How actively you get to participate in your Portfolio related discussions		
+16	Inclusion	 Do you feel that the previous job experience has an impact on delivering the audit? 		
+17	Inclusion	Do you have people within your team with whom you can freely discuss queries or concerns without the fear of being judged?		
+18	Experience	How active are your team meetings? Does it include a variety of relevant agenda? How often do you participate in your team meetings by sharing your knowledge and experience?		
