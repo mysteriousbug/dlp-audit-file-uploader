@@ -1,52 +1,16 @@
-SN. 	Deliverables	Due Date	Current Status 	Hours Spent	PL Feedback
-1	Creating test files for data exfiltration testing under the DLP audit. I created multiple files with different file formats, types, and sensitivity labels to use for data exfiltration testing.	17th July 2025	Done	8	None
-Mandatory Training (21 July - 25 July)					
-2	"Creating a Streamlit Web App for data exfiltration testing. I had to check if I could upload the created test files (in task 1) to the web app, store it in the cloud, and download it from another system. This is also part of the DLP audit. These were the steps involved:
-1. Write frontend code in python (using streamlit library)
-2. Upload code to github repository
-3. Connect streamlit cloud to github repository and create a domain name for the website
-4. Create a mongodb cluster with necessary permissions and storage requirements
-5. Write a python script in the same github repository to connect streamlit to mongodb cluster. 
-6. Make sure to include the username, password and mongosh connection string in streamlit cloud secrets
+if interim isrr is low and volume is <100, final isrr is isrr-1
+if interim isrr is low and data format is hardcopy, then final isrr is isrr-1
+if interim isrr is low and system connectivity is privileged database access, final isrr is isrr+1
 
-Web App URL: https://dlp-audit-file-uploader.streamlit.app/
-"	31st July 2025	Done	40	None
-3	"As part of the DLP Audit, I tested around 100 URLs that are whitelisted by the IT team for file upload/download capability. I created a Python script to automatically ping the 100 urls and see is there is a 200 OK response. If yes, then I ran another Python script to check if they had an api endpoint for file upload/download. If this is also true, I manually checked if I could upload the list of test files (created in task 1) to the URLs.
-Then I proceeded to highlight the URLs and their HTTP responses."	8th August 2025	Done	30	None
-Block Leave (11 Aug - 26 Aug)					
-4	"As part of the TPSA Audit, I helped perform data analysis on RFI19 data:
+if interim isrr is moderate and volume is <100, then final isrr is isrr-1
+if interim isrr is moderate and data format is hardcopy, then final isrr is isrr-1
+if interim isrr is moderate and system connectivity is privileged database access, then final isrr is isrr+1
 
-Objective: Extract records with SLA > 90 days as per TPSA process manual.
+if interim isrr is high and volume <50 then final isrr is isrr-1
+if interim isrr is high and data format is hardcopy then final isrr is isrr-1
+if interim isrr is high and system connectivity is privileged database access then final isrr is isrr+1
 
-Observations:
+if interim isrr is critical and volume <10 then final isrr is isrr-1
+if interim isrr is critical and data format is hardcopy then final isrr is isrr-1
 
-ClosedData_RFI19: No instances with SLA > 90 days.
-NotClosedData_RFI19: 103 instances with SLA > 90 days were found, but these records had missing ""Actual End Date"" or ""Closed Date.""
-Findings from RFI53 Data Comparison:
-
-RFI19: 5.89% of samples had SLA > 90 days.
-RFI53.1: Average discrepancy percentage over the audit period was 33.22%, indicating significant variation due to different calculation times.
-Derived Metrics (Based on Call with Shriram Kumar and Pavithran Rajendran):
-
-Base Population for Audit Period: 1437 samples (1431 after removing blanks).
-Filtered Population (Medium/High Priority, excluding 'Closed Cancelled' state): 788 samples.
-SLA >= 90 Days:
-'Closed Completed' Status: 336 samples.
-'Review' Status: 61 samples.
-'Submitted to Vendor' Status: 87 samples.
-SLA > 90 and <= 119 Days:
-'Closed Completed' Status: 127 samples.
-'Review' Status: 17 samples.
-'Submitted to Vendor' Status: 27 samples.
-SLA >= 120 Days:
-'Closed Completed' Status: 209 samples.
-'Review' Status: 44 samples.
-'Submitted to Vendor' Status: 60 samples.
-New Files Created:
-
-ICFN.xlsx: 131 samples with SLA between 90 and 119 days.
-Recommended_To_Terminate.xlsx: 210 samples with SLA >= 120 days.
-Dispensed.xlsx: 4 samples with 'Dispensed' status.
-Next Steps:
-
-Analyze 1 sample from Dispensed.xlsx, 12 from Recommended_To_Terminate.xlsx, and 12 from ICFN.xlsx (total 25 samples)."	8th September 2025	Done	40	None
+for all other scenarios interim isrr==final isrr
