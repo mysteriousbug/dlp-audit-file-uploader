@@ -1,0 +1,25 @@
+num_nontransactional == 1 and num_transactional == 0 and highest classification==internal then interim isrr=minor
+num_nontransactional == 1 and num_transactional == 0 and highest classification==confidential then interim isrr=high
+num_nontransactional == 1 and num_transactional == 0 and highest classification==restricted then interim isrr=critical
+
+num_transactional == 1 and num_nontransactional == 0 and highest classification==internal then interim isrr=low
+num_transactional == 1 and num_nontransactional == 0 highest classification==confidential then interim isrr=high
+num_transactional == 1 and num_nontransactional == 0 highest classification==restricted then interim isrr=critical
+
+num_nontransactional == 2 and num_transactional == 0 and highest classification==internal then interim isrr=low
+num_nontransactional == 2 and num_transactional == 0 and highest classification==confidential then interim isrr=high
+num_nontransactional == 2 == 1 and num_transactional == 0 and highest classification==restricted then interim isrr=critical
+
+num_nontransactional > 2 and num_transactional == 0 and highest classification==confidential then interim isrr=moderate
+num_nontransactional > 2 and num_transactional == 0 and highest classification==restricted then interim isrr=critical
+
+num_transactional ==1 and num_nontransactional>=1 and highest classification==confidential then interim isrr=moderate
+num_transactional ==1 and num_nontransactional>=1 and highest classification==restricted then interim isrr=critical
+
+num_transactional==2 and num_nontransactional == 0 and highest classification==confidential then interim isrr=moderate
+num_transactional==2 and num_nontransactional == 0 and highest classification==restricted then interim isrr=critical
+
+num_transactional==2 and num_nontransactional >=1 and highest classification == confidential then interim isrr = high
+num_transactional==2 and num_nontransactional >=1 and highest classification == restricted then interim isrr = critical
+
+num_transactional==3 then interim isrr = critical
