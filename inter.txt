@@ -1,62 +1,619 @@
-SCB Control Category	Control Description	Control Objective
-Human Resource Security	All users (including physical security personnel, information security personnel, privileged users and third-party stakeholders) are informed, trained, and understand their roles and responsibilities.	All users are informed, trained, understand their roles and responsibilities related to information security to ensure that, in the event of a cybersecurity incident, all SCB processes are procedures that can be followed; while reducing delays, deviation from policy or unintended consequences.
-Human Resource Security	Cybersecurity is included in human resources practices (e.g., deprovisioning, personnel screening).	Cybersecurity is included in human resources practices, to ensure that users with access to SCB data are not high-risk individuals.
-Human Resource Security	"Cybersecurity roles and responsibilities for the entire workforce and third-party stakeholders (e.g., suppliers, customers, partners) are established and communicated.
-"	Cybersecurity roles and responsibilities are established for the entire workforce and third-party stakeholders to ensure that employees understand their responsibilities related to cyber security.
-Information Asset Management	Physical devices, systems, software platforms and applications within the organisation are inventoried; and external information systems are catalogued. 	Physical devices, systems, software platforms and applications (both internal and external to the organisation) which contain SCB data are inventoried, to ensure that appropriate security controls can be deployed consistently across the entire IT landscape.
-Information Asset Management	Assets are formally managed throughout removal, transfers, and disposition; and data is destroyed according to policy.	Assets are formally managed throughout removal, transfers, and disposition, and data is destroyed according to policy, to ensure that, after the life cycle of the asset, data is not discoverable and cannot be recovered from retired assets. 
-Information Asset Management	Maintenance and repair of organisational assets including remote maintenance is performed and logged in a timely manner, with approved and controlled tools, in a manner that prevents unauthorized access.	Both asset maintenance and remote asset maintenance is logged and performed using appropriate tools to ensure that organisational assets are repaired and maintained in a secure manner;  and  remote access to organisational assets is restricted to only those users which require it as a part of their job responsibilities.
-Information Asset Management	Resources (e.g., hardware, devices, data, time, personnel, and software) are prioritised based on their classification, criticality, and business value.	Resources are prioritised based on their classification, criticality, and business value, to ensure that proportionate controls can be implemented.
-Information Security Risk Management	Cyber threats, both internal and external, are identified and documented.	Cyber threats, both internal and external, are identified, documented and analysed to ensure that responses to relevant threats can be addressed.
-Information Security Risk Management	Potential business impacts, likelihoods, threats, and vulnerabilities, are identified and analysed to determine prioritised business risks.	Potential business impacts, likelihoods, threats, and vulnerabilities, are identified to understand and prioritize risk remediation activities.
-Access Control	Requests for logical access to applications and systems that process, store, or transmit SCB data are approved by an appropriate level of management.	System access requests are approved prior to provisioning to ensure unauthorised individuals are restricted from gaining access to SCB data.
-Access Control	For users which no longer require logical access to SCB data (e.g. resignations, terminations and/or transfers), system access is removed within a timely manner.	Logical system access is removed in a timely manner to ensure that SCB data is protected from unauthorised use.
-Access Control	The access rights of all users with logical access to applications and systems that process, store, or transmit SCB data including external parties (e.g. Cloud Service Provider administrators, independent auditors, vendor technical support personnel) are reviewed on a periodic basis. 	Existing system access is periodically reviewed to ensure access rights assigned are still required and commensurate with the job responsibilities assigned to each user.
-Access Control	Remote access is managed.	To protect from unauthorised access of SCB data remotely.
-Access Control	Access permissions and authorizations are managed, incorporating the principles of least privilege and segregation of duties.	The principle of 'least privilege' is considered in establishing segregation of duties when granting access to applications and systems that process, store or transmit SCB data.
-Access Control	Access to privileged accounts of applications and systems that process, store, or transmit SCB data are restricted to authorised users only.	Administrative access privileges are restricted to an appropriate set of users to ensure escalated access permissions are not accessible by unauthorised users.
-Access Control	Identities are proofed and bound to credentials, and asserted in interactions.	The ability to bind identities to credentials enables an organisation to validate the authorization level of a user before granting access to its systems.
-Access Control	Users, devices, and other assets are authenticated (e.g., single-factor, multifactor) commensurate with the risk of the transaction (e.g., individuals’ security and privacy risks and other organisational risks).	Users, devices, and other assets are authenticated commensurate with the risk of the transaction, to ensure that SCB data is adequately protected.
-Access Control	API access and authentication requirements are documented and enforced.	API access and authentication requirements are documented and enforced, to ensure that access to SCB data through APIs is appropriately restricted.
-Physical Security	There are physical security mechanisms in place to restrict access to work areas, facilities, and locations in use by your organisation to process, store, or transmit SCB data.	Physical security mechanisms are deployed to ensure facilities which process, store, or transmit SCB data are adequately protected from physical intrusion or unauthorised access. 
-Physical Security	The physical access rights to facilities which process, store, or transmit SCB data including external parties (e.g. Cloud Service Provider administrators, independent auditors, vendor technical support personnel) are approved and managed.	Physical access rights are approved and managed ensure facilities which process, store, or transmit SCB data are adequately protected from unauthorized physical access.
-Physical Security	The physical access rights to facilities which process, store, or transmit SCB data including external parties (e.g. Cloud Service Provider administrators, independent auditors, vendor technical support personnel) are reviewed on a periodic basis. 	Physical access rights are periodically recertified to ensure facilities which process, store, or transmit SCB data are adequately protected from unauthorized physical access.
-Physical Security	Policy and regulations regarding the physical operating environment for organisational assets are met.	The physical operating environment for physical assets is defined in order to ensure assets containing SCB data are protected from physical and environmental threats.
-Cryptographic Management	Data-at-rest is protected.	"Data at data-at-rest is protected commensurate with the criticality and sensitivity of the information to reduce the risk of unauthorised access to data-at-rest, and potential compromise of the confidentiality and integrity of SCB data. 
-"
-Cryptographic Management	Data-in-transit is protected.	Data-in-transit is protected, ensuring that SCB data is safeguarded from man-in-the-middle attacks.
-Cryptographic Management	Cryptographic keys are protected.	Cryptographic keys used to encrypt SCB data are protected and managed, to minimise the potential of compromise to the confidentiality and integrity of SCB data.
-Data Leakage Prevention	Protections against data leaks are implemented.	Protections against data leaks are implemented to ensure SCB data is not transferred outside the control of organisation.
-Data Leakage Prevention	Removable media is protected and its use restricted according to policy.	Removable media is protected and restricted to ensure data written to the media is only accessible by those individuals who are authorised to access it.
-IT Infrastructure Security	A baseline configuration of information technology/industrial control systems is created and maintained incorporating security principles (e.g., concept of least functionality).	A baseline configuration of information technology/industrial control systems is created and maintained incorporating security principles, to ensure that best practices are followed consistently throughout the organisation.
-IT Infrastructure Security	The principle of least functionality is incorporated by configuring systems to provide only essential capabilities.	The principle of least functionality is incorporated by configuring systems to provide only essential capabilities, to ensure that users cannot access resources that they do not require to discharge their responsibilities.
-IT Infrastructure Security	There is a defined approach for managing security patches, including identification, monitoring, and appropriate risk treatment.	A patch management plan and supporting processes are developed and implemented to ensure that a process exists to identify and monitor systems for patch compliance, and to manage the risk associated with unpatched systems.
-IT Infrastructure Security	Integrity checking mechanisms are used to verify software, firmware, and information integrity.	Integrity checking mechanisms are used to verify software, firmware, and information integrity, to ensure that software and firmware have not been compromised prior to deployment.
-IT Infrastructure Security	Integrity checking mechanisms are used to verify hardware integrity.	Integrity checking mechanisms are used to verify hardware integrity, to ensure that hardware has not been compromised prior to deployment.
-Network Security	Network integrity is protected, incorporating network segregation where appropriate.	Networks and systems are segmented to maintain appropriate security.
-Network Security	Communications and control networks are protected.	Communications and control networks are protected, to ensure that external and internal threats cannot access areas that they do not have authorization.
-System Development & Change Management	A System Development Life Cycle to manage systems is implemented.	A System Development Life Cycle to manage systems is implemented, to ensure that software development follows best practice security principles.
-System Development & Change Management	The development and testing environment(s) are separate from the production environment.	The development and testing environment(s) are separate from the production environment, to limit the transfer and access of data between the two environments and to strengthen change control procedures.
-System Development & Change Management	Configuration change control processes are in place.	Configuration change control processes are in place, to ensure that only tested and approved changes are committed to production.
-Information Security Aspects of Backup & Disaster Recovery	Backups of information are secured.	Backups of information are secured, to ensure that security and integrity of backup data is maintained.
-Security Continuous Monitoring	Audit/log records are determined, documented, implemented, and reviewed in accordance with policy.	The organisation's activity logs and other security event logs are identified, reviewed, and maintained in a secure manner for an appropriate amount of time to ensure adequate level trackability is retained for detection, investigation, or audit purposes.
-Security Continuous Monitoring	Malicious code and unauthorized mobile code is detected	Malicious code is detected, to ensure that the organisation and SCB data is protected from malware.
-Security Continuous Monitoring	"Vulnerability scans are performed, and asset vulnerabilities are identified and documented.
-"	Vulnerability scans are performed, to ensure that missing patches, weak configurations and unsecure protocols are highlighted. These (e.g. servers, desktops, network infrastructure) vulnerabilities should be documented to ensure that vulnerabilities can be tracked and remediated in accordance with controls
-Security Continuous Monitoring	A vulnerability management plan is developed and implemented, and newly identified vulnerabilities are remediated, mitigated or documented as accepted risks.	A vulnerability management plan and supporting processes are developed and implemented to ensure that a process exists to remediate, mitigate or risk accept vulnerabilities which have been identified in a defined time period.
-Security Continuous Monitoring	Monitoring for unauthorized personnel, connections, devices, and software is performed.	Monitoring for unauthorized personnel, connections, devices, and software is performed, to ensure that rogue assets are not present on the enterprise network.
-Security Continuous Monitoring	The network, personnel activity, and external service provider activity is monitored to detect potential cybersecurity events and detected events are analysed to understand attack targets and methods. 	Network, personnel activity, and external provider activity is monitored to detect potential cybersecurity events and understand attack targets and methods, to ensure that attack tools, techniques and procedures can be attributed to attackers, enabling appropriate mitigation.
-Security Continuous Monitoring	Event detection information is communicated to appropriate parties.	Event detection information is communicated to appropriate parties, to ensure that the appropriate response can be established.
-Security Continuous Monitoring	Detection processes are tested.	Detection processes are tested to ensure that the organisation’s detective capability is operating effectively.
-Information Security Incident Management	Incidents are reported consistent with established criteria.	Incidents are reported consistent with established criteria, to ensure that important information about incidents (e.g. what type of data is involved) can be relayed quickly and that any trends can be analysed.
-Information Security Incident Management	Incidents are contained and mitigated	Incidents are contained and mitigated, to ensure that the business (e.g. client facing roles) can continue to provide operational services (e.g. payment platform).
-Information Security Incident Management	Impact of events is determined.	Impact of events is determined to ensure that the incidents can be isolated, contained and mitigated against defined response and recovery objectives.
-Information Security Incident Management	Incident alert thresholds are established.	Incident alert thresholds are established, to ensure that intrusion attempts (e.g. brute force attacks) can be identified, with appropriate response measures (e.g. account locking).
-Information Security Incident Management	Incidents are categorized consistent with response plans.	Incidents are categorized consistent with response plans, to ensure that response activities can be aligned to pre-existing response plans.
-Information Security Incident Management	Incidents are alerted on and investigated to understand their impact.	Incidents are investigated and analysed to understand their impact and ensure that adequate resources and proportionate response can be deployed.
-Governance of External Parties	External dependencies are identified, managed and prioritised based upon the criticality of services provided and business functions supported. 	External dependencies are identified, managed, and prioritised based on their criticality to the organisation, to enable the implementation of appropriate controls. 
-Governance of External Parties	Minimum cybersecurity practices for critical external dependencies are identified and documented.	Minimum cybersecurity practices for critical external dependencies are identified and documented, to ensure that the organisation supply chain manages cybersecurity in alignment with the organisation. 
-Governance of External Parties	"External parties are monitored to confirm that they have satisfied their obligations as required. Reviews of audits, summaries of test results, or other equivalent evaluations of external parties are conducted.
+import streamlit as st
+import pandas as pd
+import json
+from io import BytesIO
+import PyPDF2
+import re
+from datetime import datetime
+import os
+from dotenv import load_dotenv
+from anthropic import Anthropic
+import time
 
-"	Monitoring controls are in place to safeguard supply chain information security risk via external parties through third party assessment/ evaluation, independent reports process etc.
-Risk Reduction	N/A	To identify, track and remediate security vulnerabilities and penetration test results of third parties systems that access, process, store, or transmit SCB data.
+load_dotenv()
+
+st.set_page_config(page_title="AI SCB Mapper", layout="wide", page_icon="🤖")
+
+# Initialize session state
+if 'scb_controls' not in st.session_state:
+    st.session_state.scb_controls = None
+if 'nist_controls' not in st.session_state:
+    st.session_state.nist_controls = None
+if 'isf_controls' not in st.session_state:
+    st.session_state.isf_controls = None
+if 'cis_controls' not in st.session_state:
+    st.session_state.cis_controls = None
+if 'mappings' not in st.session_state:
+    st.session_state.mappings = None
+if 'ai_client' not in st.session_state:
+    api_key = os.getenv('ANTHROPIC_API_KEY')
+    st.session_state.ai_client = Anthropic(api_key=api_key) if api_key else None
+
+# Helper Functions
+def extract_pdf_text(pdf_file):
+    """Extract text from PDF"""
+    try:
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        return text
+    except Exception as e:
+        st.error(f"PDF extraction error: {str(e)}")
+        return ""
+
+def parse_nist_pdf(text):
+    """Parse NIST SP 800-53 Rev 5 from PDF"""
+    controls = []
+    
+    # Multiple patterns to try
+    patterns = [
+        # Pattern 1: AC-1 NAME
+        r'([A-Z]{2}-\d+(?:\(\d+\))?)\s+([A-Z][A-Za-z\s\-:,\(\)]+?)\n((?:(?![A-Z]{2}-\d+\s+[A-Z]).*\n){1,20})',
+        # Pattern 2: Simpler
+        r'([A-Z]{2}-\d+)\s+([^\n]{10,100})\n'
+    ]
+    
+    for pattern in patterns:
+        matches = re.finditer(pattern, text, re.MULTILINE)
+        for match in matches:
+            ctrl_id = match.group(1).strip()
+            ctrl_name = match.group(2).strip() if len(match.groups()) > 1 else ''
+            description = match.group(3).strip()[:800] if len(match.groups()) > 2 else ''
+            
+            controls.append({
+                'Control_ID': ctrl_id,
+                'Control_Name': ctrl_name,
+                'Description': description,
+                'Full_Text': f"{ctrl_id} {ctrl_name}: {description}"
+            })
+        
+        if controls:
+            break  # Use first successful pattern
+    
+    # Remove duplicates
+    seen = set()
+    unique_controls = []
+    for ctrl in controls:
+        if ctrl['Control_ID'] not in seen:
+            seen.add(ctrl['Control_ID'])
+            unique_controls.append(ctrl)
+    
+    return pd.DataFrame(unique_controls) if unique_controls else pd.DataFrame(columns=['Control_ID', 'Control_Name', 'Description', 'Full_Text'])
+
+def parse_isf_pdf(text):
+    """Parse ISF Standard of Good Practice from PDF"""
+    controls = []
+    
+    # Try multiple ISF patterns
+    patterns = [
+        r'([A-Z]{2}\d+\.\d+)\s+([^\n]{10,100})',
+        r'(\d+\.\d+\.\d+)\s+([^\n]{10,100})',
+        r'([A-Z]{2,3}-\d+\.\d+)\s+([^\n]{10,100})'
+    ]
+    
+    for pattern in patterns:
+        matches = re.finditer(pattern, text, re.MULTILINE)
+        for match in matches:
+            ctrl_id = match.group(1).strip()
+            ctrl_name = match.group(2).strip()
+            
+            controls.append({
+                'Control_ID': ctrl_id,
+                'Control_Name': ctrl_name,
+                'Description': ctrl_name,
+                'Full_Text': f"{ctrl_id} {ctrl_name}"
+            })
+        
+        if len(controls) > 10:  # If we got reasonable results
+            break
+    
+    # Remove duplicates
+    seen = set()
+    unique_controls = []
+    for ctrl in controls:
+        if ctrl['Control_ID'] not in seen:
+            seen.add(ctrl['Control_ID'])
+            unique_controls.append(ctrl)
+    
+    return pd.DataFrame(unique_controls) if unique_controls else pd.DataFrame(columns=['Control_ID', 'Control_Name', 'Description', 'Full_Text'])
+
+def load_excel_controls(file, control_type):
+    """Load controls from Excel file"""
+    try:
+        xl = pd.ExcelFile(file)
+        
+        # Auto-detect sheet
+        sheet_name = xl.sheet_names[0]
+        for name in xl.sheet_names:
+            if 'control' in name.lower() or 'safeguard' in name.lower():
+                sheet_name = name
+                break
+        
+        df = pd.read_excel(file, sheet_name=sheet_name)
+        
+        # Try to standardize column names
+        col_map = {}
+        for col in df.columns:
+            col_lower = str(col).lower()
+            if 'id' in col_lower or 'control' in col_lower or 'number' in col_lower:
+                col_map[col] = 'Control_ID'
+            elif 'name' in col_lower or 'title' in col_lower:
+                col_map[col] = 'Control_Name'
+            elif 'desc' in col_lower:
+                col_map[col] = 'Description'
+        
+        if col_map:
+            df = df.rename(columns=col_map)
+        
+        # Ensure required columns
+        if 'Control_ID' not in df.columns:
+            st.error(f"{control_type}: Missing Control_ID column. Please ensure your Excel has a column with control IDs.")
+            return None
+        
+        if 'Control_Name' not in df.columns:
+            df['Control_Name'] = df['Control_ID']
+        
+        if 'Description' not in df.columns:
+            df['Description'] = df['Control_Name']
+        
+        # Create Full_Text
+        df['Full_Text'] = df.apply(
+            lambda row: f"{row.get('Control_ID', '')} {row.get('Control_Name', '')}: {row.get('Description', '')}",
+            axis=1
+        )
+        
+        return df
+    except Exception as e:
+        st.error(f"Error loading {control_type} Excel: {str(e)}")
+        return None
+
+def load_scb_file(file):
+    """Load SCB controls"""
+    try:
+        # Try tab-delimited first
+        try:
+            df = pd.read_csv(file, sep='\t', encoding='utf-8')
+        except:
+            file.seek(0)
+            df = pd.read_csv(file, encoding='utf-8')
+        
+        # Verify required columns
+        required = ['SCB Control Category', 'Control Description', 'Control Objective']
+        if not all(col in df.columns for col in required):
+            st.error(f"Missing required columns. Found: {list(df.columns)}")
+            return None
+        
+        # Add control IDs
+        categories = {
+            'Human Resource Security': 'HRS',
+            'Information Asset Management': 'ASM',
+            'Information Security Risk Management': 'RSK',
+            'Access Control': 'ACC',
+            'Physical Security': 'PHY',
+            'Cryptographic Management': 'CRY',
+            'Data Leakage Prevention': 'DLP',
+            'IT Infrastructure Security': 'ITS',
+            'Network Security': 'NWS',
+            'System Development & Change Management': 'SDC',
+            'Information Security Aspects of Backup & Disaster Recovery': 'BKP',
+            'Security Continuous Monitoring': 'COM',
+            'Information Security Incident Management': 'INC',
+            'Governance of External Parties': 'EXP',
+            'Risk Reduction': 'RR'
+        }
+        
+        control_ids = []
+        cat_counters = {}
+        
+        for cat in df['SCB Control Category']:
+            prefix = categories.get(cat, 'UNK')
+            cat_counters[prefix] = cat_counters.get(prefix, 0) + 1
+            control_ids.append(f"{prefix}-{cat_counters[prefix]:02d}")
+        
+        df.insert(0, 'SCB_Control_ID', control_ids)
+        
+        return df
+    except Exception as e:
+        st.error(f"Error loading SCB file: {str(e)}")
+        return None
+
+def get_ai_mapping(scb_control, framework_controls_df, framework_name, client):
+    """Get AI mapping for one SCB control"""
+    
+    if not client or framework_controls_df is None or len(framework_controls_df) == 0:
+        return []
+    
+    # Prepare framework controls (use more for better context)
+    framework_text = ""
+    max_controls = min(100, len(framework_controls_df))
+    
+    for idx, row in framework_controls_df.head(max_controls).iterrows():
+        ctrl_id = row.get('Control_ID', 'N/A')
+        ctrl_name = row.get('Control_Name', '')
+        description = row.get('Description', '')[:150]
+        framework_text += f"- {ctrl_id}: {ctrl_name} - {description}\n"
+    
+    prompt = f"""You are an expert cybersecurity control mapper. Map the SCB (Standard Chartered Bank) control to relevant {framework_name} controls.
+
+SCB CONTROL:
+ID: {scb_control.get('SCB_Control_ID')}
+Category: {scb_control.get('SCB Control Category')}
+Description: {scb_control.get('Control Description')}
+Objective: {scb_control.get('Control Objective')}
+
+{framework_name.upper()} CONTROLS AVAILABLE:
+{framework_text}
+
+MAPPING CRITERIA:
+1. Controls must address the SAME security objective
+2. Implementation approach should be similar
+3. Scope and coverage should align
+4. Consider both preventive and detective aspects
+5. Only map if there's genuine alignment (don't force it)
+
+MAP TO THE TOP 1-5 MOST RELEVANT {framework_name} CONTROLS. If no good mapping exists, return empty.
+
+OUTPUT FORMAT (CRITICAL - MUST BE VALID JSON):
+{{
+  "mappings": [
+    {{
+      "framework_control_id": "Exact ID from list above",
+      "confidence": "high/medium/low",
+      "reasoning": "Brief explanation (1-2 sentences)"
+    }}
+  ]
+}}
+
+RESPOND WITH ONLY THE JSON. NO MARKDOWN, NO BACKTICKS, NO OTHER TEXT."""
+
+    try:
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2000,
+            temperature=0.3,  # Lower temperature for more consistent output
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        response_text = message.content[0].text.strip()
+        
+        # Aggressive cleaning
+        response_text = response_text.replace('```json', '').replace('```', '').strip()
+        if response_text.startswith('```'):
+            response_text = response_text[3:]
+        if response_text.endswith('```'):
+            response_text = response_text[:-3]
+        response_text = response_text.strip()
+        
+        # Parse JSON
+        result = json.loads(response_text)
+        mappings = result.get('mappings', [])
+        
+        # Validate mappings reference actual control IDs
+        valid_mappings = []
+        valid_ids = set(framework_controls_df['Control_ID'].tolist())
+        
+        for mapping in mappings:
+            if mapping.get('framework_control_id') in valid_ids:
+                valid_mappings.append(mapping)
+        
+        return valid_mappings
+    
+    except json.JSONDecodeError as e:
+        st.warning(f"⚠️ JSON parse error for {scb_control.get('SCB_Control_ID')}: {str(e)}")
+        return []
+    except Exception as e:
+        st.error(f"❌ Mapping error for {scb_control.get('SCB_Control_ID')}: {str(e)}")
+        return []
+
+def get_control_details(framework_df, control_ids):
+    """Get full details for control IDs"""
+    details = []
+    for ctrl_id in control_ids:
+        match = framework_df[framework_df['Control_ID'] == ctrl_id]
+        if not match.empty:
+            row = match.iloc[0]
+            details.append(f"{ctrl_id}: {row.get('Control_Name', '')}")
+    return details
+
+def process_all_mappings(scb_df, nist_df, isf_df, cis_df, client):
+    """Process all mappings with progress tracking"""
+    
+    total = len(scb_df)
+    results = []
+    
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
+    
+    start_time = time.time()
+    
+    for idx, scb_row in scb_df.iterrows():
+        scb_dict = scb_row.to_dict()
+        ctrl_id = scb_dict['SCB_Control_ID']
+        
+        # Update status
+        elapsed = time.time() - start_time
+        avg_time = elapsed / (idx + 1) if idx > 0 else 0
+        remaining = avg_time * (total - idx - 1)
+        
+        status_text.text(f"Processing {ctrl_id} ({idx+1}/{total}) | "
+                        f"Time remaining: ~{int(remaining/60)} min {int(remaining%60)} sec")
+        
+        # Get mappings with rate limiting
+        nist_mappings = []
+        isf_mappings = []
+        cis_mappings = []
+        
+        if nist_df is not None and len(nist_df) > 0:
+            nist_mappings = get_ai_mapping(scb_dict, nist_df, "NIST SP 800-53 Rev 5", client)
+            time.sleep(1)  # Rate limiting
+        
+        if isf_df is not None and len(isf_df) > 0:
+            isf_mappings = get_ai_mapping(scb_dict, isf_df, "ISF Standard of Good Practice", client)
+            time.sleep(1)
+        
+        if cis_df is not None and len(cis_df) > 0:
+            cis_mappings = get_ai_mapping(scb_dict, cis_df, "CIS Controls v8", client)
+            time.sleep(1)
+        
+        # Get full control details
+        nist_details = get_control_details(nist_df, [m['framework_control_id'] for m in nist_mappings]) if nist_df is not None else []
+        isf_details = get_control_details(isf_df, [m['framework_control_id'] for m in isf_mappings]) if isf_df is not None else []
+        cis_details = get_control_details(cis_df, [m['framework_control_id'] for m in cis_mappings]) if cis_df is not None else []
+        
+        # Build result row
+        result_row = {
+            'SCB_Control_ID': ctrl_id,
+            'SCB_Category': scb_dict.get('SCB Control Category', ''),
+            'SCB_Description': scb_dict.get('Control Description', ''),
+            'SCB_Objective': scb_dict.get('Control Objective', ''),
+        }
+        
+        # NIST columns
+        result_row['NIST_Mapped'] = 'Yes' if nist_mappings else 'No'
+        result_row['NIST_Controls'] = ' | '.join(nist_details) if nist_details else ''
+        result_row['NIST_Confidence'] = '; '.join([m['confidence'] for m in nist_mappings]) if nist_mappings else ''
+        result_row['NIST_Reasoning'] = ' | '.join([m['reasoning'] for m in nist_mappings]) if nist_mappings else ''
+        
+        # ISF columns
+        result_row['ISF_Mapped'] = 'Yes' if isf_mappings else 'No'
+        result_row['ISF_Controls'] = ' | '.join(isf_details) if isf_details else ''
+        result_row['ISF_Confidence'] = '; '.join([m['confidence'] for m in isf_mappings]) if isf_mappings else ''
+        result_row['ISF_Reasoning'] = ' | '.join([m['reasoning'] for m in isf_mappings]) if isf_mappings else ''
+        
+        # CIS columns
+        result_row['CIS_Mapped'] = 'Yes' if cis_mappings else 'No'
+        result_row['CIS_Controls'] = ' | '.join(cis_details) if cis_details else ''
+        result_row['CIS_Confidence'] = '; '.join([m['confidence'] for m in cis_mappings]) if cis_mappings else ''
+        result_row['CIS_Reasoning'] = ' | '.join([m['reasoning'] for m in cis_mappings]) if cis_mappings else ''
+        
+        results.append(result_row)
+        
+        # Update progress
+        progress_bar.progress((idx + 1) / total)
+        
+        # Update metrics
+        temp_df = pd.DataFrame(results)
+        metrics_col1.metric("NIST", f"{(temp_df['NIST_Mapped']=='Yes').sum()}/{len(temp_df)}")
+        metrics_col2.metric("ISF", f"{(temp_df['ISF_Mapped']=='Yes').sum()}/{len(temp_df)}")
+        metrics_col3.metric("CIS", f"{(temp_df['CIS_Mapped']=='Yes').sum()}/{len(temp_df)}")
+    
+    status_text.text("✅ Mapping complete!")
+    
+    return pd.DataFrame(results)
+
+# Main UI
+st.title("🤖 AI-Powered SCB Control Mapper")
+st.markdown("*Automated mapping of SCB controls to NIST, ISF, and CIS frameworks*")
+
+# Check API
+with st.sidebar:
+    st.header("⚙️ Configuration")
+    
+    if st.session_state.ai_client:
+        st.success("✅ API Connected")
+    else:
+        st.error("❌ No API Key")
+        st.info("Set ANTHROPIC_API_KEY in .env")
+    
+    st.markdown("---")
+    st.header("📁 Upload Files")
+    
+    # File uploaders
+    scb_file = st.file_uploader("1. SCB Controls (CSV/TXT)", type=['txt', 'csv'], key='scb')
+    nist_file = st.file_uploader("2. NIST (PDF or Excel)", type=['pdf', 'xlsx', 'xls'], key='nist')
+    isf_file = st.file_uploader("3. ISF (PDF or Excel)", type=['pdf', 'xlsx', 'xls'], key='isf')
+    cis_file = st.file_uploader("4. CIS (Excel)", type=['xlsx', 'xls'], key='cis')
+    
+    st.markdown("---")
+    
+    # Process uploads
+    if scb_file:
+        df = load_scb_file(scb_file)
+        if df is not None:
+            st.session_state.scb_controls = df
+            st.success(f"✅ {len(df)} SCB controls")
+    
+    if nist_file:
+        if nist_file.name.endswith('.pdf'):
+            with st.spinner("Parsing NIST PDF..."):
+                text = extract_pdf_text(nist_file)
+                df = parse_nist_pdf(text)
+                if len(df) > 0:
+                    st.session_state.nist_controls = df
+                    st.success(f"✅ {len(df)} NIST controls")
+                else:
+                    st.warning("⚠️ PDF parsing found 0 controls. Try Excel format.")
+        else:
+            df = load_excel_controls(nist_file, "NIST")
+            if df is not None:
+                st.session_state.nist_controls = df
+                st.success(f"✅ {len(df)} NIST controls")
+    
+    if isf_file:
+        if isf_file.name.endswith('.pdf'):
+            with st.spinner("Parsing ISF PDF..."):
+                text = extract_pdf_text(isf_file)
+                df = parse_isf_pdf(text)
+                if len(df) > 0:
+                    st.session_state.isf_controls = df
+                    st.success(f"✅ {len(df)} ISF controls")
+                else:
+                    st.warning("⚠️ PDF parsing found 0 controls. Try Excel format.")
+        else:
+            df = load_excel_controls(isf_file, "ISF")
+            if df is not None:
+                st.session_state.isf_controls = df
+                st.success(f"✅ {len(df)} ISF controls")
+    
+    if cis_file:
+        df = load_excel_controls(cis_file, "CIS")
+        if df is not None:
+            st.session_state.cis_controls = df
+            st.success(f"✅ {len(df)} CIS controls")
+
+# Main content
+if st.session_state.scb_controls is not None:
+    
+    st.header("📊 Loaded Data")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("SCB", len(st.session_state.scb_controls))
+    col2.metric("NIST", len(st.session_state.nist_controls) if st.session_state.nist_controls is not None else 0)
+    col3.metric("ISF", len(st.session_state.isf_controls) if st.session_state.isf_controls is not None else 0)
+    col4.metric("CIS", len(st.session_state.cis_controls) if st.session_state.cis_controls is not None else 0)
+    
+    # Check readiness
+    ready_count = sum([
+        st.session_state.nist_controls is not None and len(st.session_state.nist_controls) > 0,
+        st.session_state.isf_controls is not None and len(st.session_state.isf_controls) > 0,
+        st.session_state.cis_controls is not None and len(st.session_state.cis_controls) > 0
+    ])
+    
+    if ready_count == 0:
+        st.warning("⚠️ Upload at least one framework (NIST, ISF, or CIS) to begin.")
+    elif not st.session_state.ai_client:
+        st.error("❌ Cannot start: API key not configured.")
+    else:
+        st.success(f"✅ Ready to map! {ready_count} frameworks loaded.")
+        
+        st.markdown("---")
+        
+        # Start button
+        if st.button("🚀 START AI MAPPING", type="primary", use_container_width=True):
+            
+            st.markdown("---")
+            st.subheader("⏳ Processing (This will take 2-3 hours)")
+            
+            results_df = process_all_mappings(
+                st.session_state.scb_controls,
+                st.session_state.nist_controls,
+                st.session_state.isf_controls,
+                st.session_state.cis_controls,
+                st.session_state.ai_client
+            )
+            
+            st.session_state.mappings = results_df
+            
+            st.success("🎉 MAPPING COMPLETE!")
+            st.balloons()
+            
+            # Show results
+            st.markdown("---")
+            st.header("📊 Results")
+            
+            st.dataframe(results_df, use_container_width=True, height=400)
+            
+            # Statistics
+            st.subheader("📈 Coverage Statistics")
+            col1, col2, col3 = st.columns(3)
+            
+            nist_pct = (results_df['NIST_Mapped'] == 'Yes').sum() / len(results_df) * 100
+            isf_pct = (results_df['ISF_Mapped'] == 'Yes').sum() / len(results_df) * 100
+            cis_pct = (results_df['CIS_Mapped'] == 'Yes').sum() / len(results_df) * 100
+            
+            col1.metric("NIST Coverage", f"{nist_pct:.0f}%")
+            col2.metric("ISF Coverage", f"{isf_pct:.0f}%")
+            col3.metric("CIS Coverage", f"{cis_pct:.0f}%")
+            
+            # Export
+            st.markdown("---")
+            st.header("💾 Download Results")
+            
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                results_df.to_excel(writer, sheet_name='SCB_Mappings', index=False)
+                
+                # Summary sheet
+                summary = pd.DataFrame({
+                    'Framework': ['NIST', 'ISF', 'CIS'],
+                    'Mapped': [
+                        (results_df['NIST_Mapped'] == 'Yes').sum(),
+                        (results_df['ISF_Mapped'] == 'Yes').sum(),
+                        (results_df['CIS_Mapped'] == 'Yes').sum()
+                    ],
+                    'Total': [len(results_df)] * 3,
+                    'Coverage_%': [f"{nist_pct:.1f}", f"{isf_pct:.1f}", f"{cis_pct:.1f}"]
+                })
+                summary.to_excel(writer, sheet_name='Summary', index=False)
+            
+            st.download_button(
+                "📥 DOWNLOAD EXCEL REPORT",
+                output.getvalue(),
+                f"SCB_AI_Mappings_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+    
+    # Show existing results if available
+    if st.session_state.mappings is not None:
+        st.markdown("---")
+        st.header("💾 Previous Results Available")
+        st.dataframe(st.session_state.mappings.head(10))
+        
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            st.session_state.mappings.to_excel(writer, sheet_name='SCB_Mappings', index=False)
+        
+        st.download_button(
+            "📥 Re-download Results",
+            output.getvalue(),
+            f"SCB_AI_Mappings_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+            use_container_width=True
+        )
+
+else:
+    st.info("👈 Upload your SCB controls file to begin")
+    
+    with st.expander("📖 How to Use", expanded=True):
+        st.markdown("""
+        ### Quick Start
+        
+        1. **Upload SCB Controls** (your base file)
+        2. **Upload Frameworks**:
+           - NIST: PDF or Excel
+           - ISF: PDF or Excel  
+           - CIS: Excel (you have this)
+        3. **Click "START AI MAPPING"**
+        4. **Wait 2-3 hours** (automatic processing)
+        5. **Download Excel report**
+        
+        ### Excel Format for NIST/ISF
+        
+        If PDF parsing fails, create Excel with these columns:
+        - `Control_ID`: AC-1, SG1.1, etc.
+        - `Control_Name`: Policy and Procedures
+        - `Description`: Full control description
+        
+        ### Output Format
+        
+        For each SCB control, you get:
+        - Mapped (Yes/No) for each framework
+        - Control IDs with full descriptions
+        - Confidence levels (high/medium/low)
+        - AI reasoning for each mapping
+        """)
+
+st.markdown("---")
+st.caption("🤖 Powered by Claude Sonnet 4 | Anthropic")
