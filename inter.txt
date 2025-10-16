@@ -1,1 +1,25 @@
-SG	PRD	LAN	Environment	TEMP-Event-3.6-DRH-PreCutover-Gap	TEMP-50821-PENTEST-ADFW11733	10825		['10.68.239.32/27']	['10.68.239.32/27']		['10.95.128.170', '10.92.128.172']	['10.92.128.172', '10.95.128.170']	['ANY']	['TCP/1 - 65535']	['50821-PRD-LAN-FD']	ALLOW	Disabled	Ad Hoc Rule	09/17/2025-16:00	09/18/2025-16:00	09/09/2025		Doesnt Contain 'UDP/1-65535,'Any'						TCP/1
+No.	Interview Questions	Summary Insights
+1	What motivates you in working with SCB and with GIAI?	
+	- Are there specific areas that you feel improvements are required?	
+2	Do you feel there is a work personal-life balance? Is there any way your immediate team or People Leader can contribute in enhancing your experience?	
+3	Do you feel comfortable sharing your ideas and opinions openly in the team, even if they differ from others' views?	
+	- If not, what can make it easier?	
+4	How comfortable do you feel admitting mistakes or asking for help without fear of negative consequences?	
+	- What improvements could make this feel safer?	
+5	How often do you feel stressed in your role, and what are the main factors contributing to this stress (e.g, workload, deadlines, systems, work-life)?	
+	- What changes or support do you believe could help reduce this stress?	
+6	How active are your team meetings? Does it include a variety of relevant agenda? How often do you participate in your team meetings by sharing your knowledge and experience?	
+	- Any suggestions on how to further improve the team meetings and camaraderie?	
+7	What are your thoughts on the current performance evaluation process?	
+	- Do you have any suggestions to enhance the performance evaluation process to make it more meaningful and supportive of your development goals?	
+8	Do you think GIAI provides sufficient training to its staff?	
+	- What specific learning and development opportunities would you like to see prioritized?	
+9	How often do you get time to attend trainings during work hours?	
+	- What changes would make it easier for you to engage in learning throughout the year?	
+10	How excited are you about AI implementation and other technological changes? What skills, training, or support do you need to adapt and thrive in the Bank's evolving environment?	
+11	How would you assess your current level of communication/engagement with your people leaders?	
+	1. How comfortable are you sharing personal and work related matters with your people leader during your 1-1 catch up?	
+	2. How would you assess the current level of performance feedback with your people leaders?	
+		
+	In what ways could our people leaders improve to create an environment where team members feel more comfortable sharing ideas, concerns, and performance feedback?	
+12	Overall Summary	
