@@ -1,25 +1,38 @@
-No.	Interview Questions	Summary Insights
-1	What motivates you in working with SCB and with GIAI?	
-	- Are there specific areas that you feel improvements are required?	
-2	Do you feel there is a work personal-life balance? Is there any way your immediate team or People Leader can contribute in enhancing your experience?	
-3	Do you feel comfortable sharing your ideas and opinions openly in the team, even if they differ from others' views?	
-	- If not, what can make it easier?	
-4	How comfortable do you feel admitting mistakes or asking for help without fear of negative consequences?	
-	- What improvements could make this feel safer?	
-5	How often do you feel stressed in your role, and what are the main factors contributing to this stress (e.g, workload, deadlines, systems, work-life)?	
-	- What changes or support do you believe could help reduce this stress?	
-6	How active are your team meetings? Does it include a variety of relevant agenda? How often do you participate in your team meetings by sharing your knowledge and experience?	
-	- Any suggestions on how to further improve the team meetings and camaraderie?	
-7	What are your thoughts on the current performance evaluation process?	
-	- Do you have any suggestions to enhance the performance evaluation process to make it more meaningful and supportive of your development goals?	
-8	Do you think GIAI provides sufficient training to its staff?	
-	- What specific learning and development opportunities would you like to see prioritized?	
-9	How often do you get time to attend trainings during work hours?	
-	- What changes would make it easier for you to engage in learning throughout the year?	
-10	How excited are you about AI implementation and other technological changes? What skills, training, or support do you need to adapt and thrive in the Bank's evolving environment?	
-11	How would you assess your current level of communication/engagement with your people leaders?	
-	1. How comfortable are you sharing personal and work related matters with your people leader during your 1-1 catch up?	
-	2. How would you assess the current level of performance feedback with your people leaders?	
-		
-	In what ways could our people leaders improve to create an environment where team members feel more comfortable sharing ideas, concerns, and performance feedback?	
-12	Overall Summary	
+1.Select the award category *
+Read the criteria for each award category and choose the one that best reflects your reason for nominating the Individual/team
+
+Operational Excellence
+Delivering value for today and tomorrow by simplifying, rationalising, and automating key operational processes to improve customer and employee journeys
+
+Engineering Excellence
+Using an engineering approach to solve a large-scale problem that positively impacts colleagues or clients. i.e. creating a solution to fix code vulnerabilities amongst others
+
+Valued Behaviours
+Do the right thing | Never settle | Better together
+
+Client Experience
+Enhancing customer experience end-to-end. Contributing speed-to-value and improving the quality of our product or service standards​
+
+Leadership Excellence
+High personal Impact, growing a culture focused on engineering and operational excellence, building high performing teams
+
+Drives for Results
+Contribution to T&O strategic programmes via Fit for Growth, Catalyst, Keystone, ISO 20022 to become a leading bank for our clients
+
+Individual Excellence
+Leading by example to master their craft and take charge of their career. Investing time in building skills in areas that can help develop sustainable and resilient careers supporting evolving business needs
+
+Diversity and Inclusion
+Driving commerce and prosperity through our unique diversity and enabling a culture of inclusion, respect and equality
+
+Emerging Tech-led Innovation
+Harness the power of technology via AI, blockchain to create breakthrough solution, transform customer experience and reimagine processes
+
+2.What impact did the initiative / project have? Please quantify with relevant metrics which is applicable for the project / initiative *
+Example of a metric: Cost per transaction - reduced by 25%, Touch Time / Cycle Time / Productivity -Increased by 12% (4% more than the previous year), Incremental Revenue -$12,000 (twice of last year). RoTe improvement by X%, Other examples of metrics could be Capacity Created/ Client Waiting Hours reduced / TAT/ Utilisation / Straight Through Processing (STP) / reduction in Carbon footprint / % of impact in D&I activities amongst others etc
+Total word count: 0 words. Words left: 200
+Add any extra information you would like the judging panel to consider (max 50 words) *
+
+
+3.Please share a brief writeup outlining the nomination (individual/team) for the award category you have selected (max 2000 words) *
+(Describe why the individual/team has been nominated for this award category. Outline their impact/contribution towards achieving the T&O priorities. Consider how the nominee has lived the valued behaviours. Include links to supporting documents (Pulse/SharePoint/Confluence). Paste in Feedback365 content or other feedback from colleagues, stakeholders etc.)
