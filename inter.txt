@@ -1,10 +1,15 @@
+i have three files
+nfast_rules.xlsx which looks like this:
 Location	Environment	Infr	Category	Policy Name	Rule Name	Rule ID	Source ITAM	Source Groups	Source IP	Destination ITAM	Destination Groups	Destination IP	Services	Services Ports	Applied To	Action	Rule State	Rules Type	Start (MM/DD/YYYY-HH:MM)	End (MM/DD/YYYY-HH:MM)	Created (MM/DD/YYYY)	In Scope of Catalyst Event 32., 3.3, 3.4, 3.5. (Sr)	In Scope of Catalyst Event 32., 3.3, 3.4, 3.5. (Dt)	In Scope
 SG	PRD	LAN	Application	14198	DMZ2 to Front Door	6876	51427	['51427-PRD-DMZ2-APP']	['10.90.64.55/32', '10.90.78.192/27', '10.91.64.55/32', '10.91.78.192/27']	14198	['14198-PRD-LAN-FD']	['10.92.176.34/31', '10.92.176.36/30', '10.92.176.40/29', '10.92.176.48/30', '10.92.176.52/31', '10.92.176.54/32', '10.92.176.57/32', '10.92.176.58/32', '10.95.176.34/31', '10.95.176.36/30', '10.95.176.40/29', '10.95.176.48/30', '10.95.176.52/32', '10.95.176.55/32', '10.95.176.56/31', '10.95.176.58/32']	['14198-PRD-LAN-FD-SVC']	['TCP/11000', 'TCP/1494', 'TCP/22', 'TCP/2222', 'TCP/2598', 'TCP/384', 'TCP/4040', 'TCP/4220', 'TCP/443', 'TCP/46785', 'TCP/5040', 'TCP/5322', 'TCP/5323', 'TCP/5324', 'TCP/5325', 'TCP/5326', 'TCP/6112', 'TCP/6222', 'TCP/6800', 'TCP/6969', 'TCP/6970', 'TCP/6971', 'TCP/7036', 'TCP/7037', 'TCP/7038', 'TCP/7701', 'TCP/8010', 'TCP/8011', 'TCP/8012', 'TCP/8013', 'TCP/8014', 'TCP/8123', 'TCP/8124', 'TCP/8125', 'TCP/9006', 'TCP/9009', 'TCP/9010', 'TCP/9011']	['14198-PRD-LAN-FD']	ALLOW	Enabled	Manifest Rule			02/27/2025	Event 3.5.2	Event 3.5.2	Yes
 
+
+ip.xlsx which looks like this:
 ip	environment
 10.143.252.65	PRD
 10.177.144.15	PRD
 
+subnet.xlsx which looks like this:
 subnet	environment
 10.1.6.0/24	PRD
 10.100.5.0/24	PRD
