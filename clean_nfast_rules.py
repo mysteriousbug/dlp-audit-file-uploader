@@ -4,7 +4,8 @@ Data Cleaning Script for nfast_rules.xlsx
 This script performs the following tasks:
 1a. Extracts IP addresses/subnets from Source Groups and Destination Groups columns
     and appends them to Source IP and Destination IP columns respectively
-1b. Removes any entries with IP ranges like '0.0.0.0-9.255.255.255' from IP columns
+1b. Removes IP range entries (like '0.0.0.0-9.255.255.255') from within the IP lists
+    Note: The rows remain intact; only the range entries are removed from the lists
 
 Usage:
     python clean_nfast_rules.py
@@ -210,18 +211,20 @@ def clean_data(input_file, output_file, create_backup=True):
         # Combine and remove duplicates (preserve as list of strings)
         combined_dest_ips = list(set(dest_ips + extracted_dest_ips))
         
-        # Task 1b: Remove IP ranges like '0.0.0.0-9.255.255.255'
+        # Task 1b: Remove IP range entries (like '0.0.0.0-9.255.255.255') from the IP lists
+        # Keep the row, just filter out the range entries from the IP lists
         source_ranges = [ip for ip in combined_source_ips if is_ip_range(ip)]
         dest_ranges = [ip for ip in combined_dest_ips if is_ip_range(ip)]
         
         if source_ranges:
-            print(f"  Row {idx+1}: Removing {len(source_ranges)} IP range(s) from Source IP: {source_ranges}")
+            print(f"  Row {idx+1}: Removing {len(source_ranges)} IP range entry(ies) from Source IP list: {source_ranges}")
             stats['ip_ranges_removed'] += len(source_ranges)
         
         if dest_ranges:
-            print(f"  Row {idx+1}: Removing {len(dest_ranges)} IP range(s) from Destination IP: {dest_ranges}")
+            print(f"  Row {idx+1}: Removing {len(dest_ranges)} IP range entry(ies) from Destination IP list: {dest_ranges}")
             stats['ip_ranges_removed'] += len(dest_ranges)
         
+        # Filter out IP ranges but keep other IPs in the list
         combined_source_ips = [ip for ip in combined_source_ips if not is_ip_range(ip)]
         combined_dest_ips = [ip for ip in combined_dest_ips if not is_ip_range(ip)]
         
@@ -230,7 +233,7 @@ def clean_data(input_file, output_file, create_backup=True):
         df.at[idx, 'Destination IP'] = str(combined_dest_ips)
     
     print("\n" + "="*80)
-    print("TASK 1B: Removed IP ranges from IP columns")
+    print("TASK 1B: Removed IP range entries from IP lists (rows kept intact)")
     print("="*80)
     
     # Save to Excel
@@ -249,8 +252,9 @@ def clean_data(input_file, output_file, create_backup=True):
     print(f"  Rows processed:              {stats['rows_processed']}")
     print(f"  Source IPs added:            {stats['source_ips_added']}")
     print(f"  Destination IPs added:       {stats['dest_ips_added']}")
-    print(f"  IP ranges removed:           {stats['ip_ranges_removed']}")
+    print(f"  IP range entries removed:    {stats['ip_ranges_removed']}")
     print("\n✓ Data cleaning completed successfully!")
+    print("  Note: All rows remain intact. Only IP range entries were removed from IP lists.")
     print("="*80)
 
 
