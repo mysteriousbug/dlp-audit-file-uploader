@@ -15,3 +15,14 @@ subnet	environment
 10.100.5.0/24	PRD
 10.108.0.0/24	PRD
 10.108.1.0/24	PRD
+
+tasks:
+1. Data Cleaning: 
+
+a. go to column Source Groups and check if any ip address/subnet is available.
+if yes, append it to the next column which is Source IP, which already has a list of subnets and IPs. add it to this list.
+do the same thing with Destination Groups and Destination IP.
+
+b. if any entry in updated Source IP/Destination list has a range like '0.0.0.0-9.255.255.255’, delete the entry.
+
+
