@@ -1,38 +1,12 @@
-1.Select the award category *
-Read the criteria for each award category and choose the one that best reflects your reason for nominating the Individual/team
+Location	Environment	Infr	Category	Policy Name	Rule Name	Rule ID	Source ITAM	Source Groups	Source IP	Destination ITAM	Destination Groups	Destination IP	Services	Services Ports	Applied To	Action	Rule State	Rules Type	Start (MM/DD/YYYY-HH:MM)	End (MM/DD/YYYY-HH:MM)	Created (MM/DD/YYYY)	In Scope of Catalyst Event 32., 3.3, 3.4, 3.5. (Sr)	In Scope of Catalyst Event 32., 3.3, 3.4, 3.5. (Dt)	In Scope
+SG	PRD	LAN	Application	14198	DMZ2 to Front Door	6876	51427	['51427-PRD-DMZ2-APP']	['10.90.64.55/32', '10.90.78.192/27', '10.91.64.55/32', '10.91.78.192/27']	14198	['14198-PRD-LAN-FD']	['10.92.176.34/31', '10.92.176.36/30', '10.92.176.40/29', '10.92.176.48/30', '10.92.176.52/31', '10.92.176.54/32', '10.92.176.57/32', '10.92.176.58/32', '10.95.176.34/31', '10.95.176.36/30', '10.95.176.40/29', '10.95.176.48/30', '10.95.176.52/32', '10.95.176.55/32', '10.95.176.56/31', '10.95.176.58/32']	['14198-PRD-LAN-FD-SVC']	['TCP/11000', 'TCP/1494', 'TCP/22', 'TCP/2222', 'TCP/2598', 'TCP/384', 'TCP/4040', 'TCP/4220', 'TCP/443', 'TCP/46785', 'TCP/5040', 'TCP/5322', 'TCP/5323', 'TCP/5324', 'TCP/5325', 'TCP/5326', 'TCP/6112', 'TCP/6222', 'TCP/6800', 'TCP/6969', 'TCP/6970', 'TCP/6971', 'TCP/7036', 'TCP/7037', 'TCP/7038', 'TCP/7701', 'TCP/8010', 'TCP/8011', 'TCP/8012', 'TCP/8013', 'TCP/8014', 'TCP/8123', 'TCP/8124', 'TCP/8125', 'TCP/9006', 'TCP/9009', 'TCP/9010', 'TCP/9011']	['14198-PRD-LAN-FD']	ALLOW	Enabled	Manifest Rule			02/27/2025	Event 3.5.2	Event 3.5.2	Yes
 
-Operational Excellence
-Delivering value for today and tomorrow by simplifying, rationalising, and automating key operational processes to improve customer and employee journeys
+ip	environment
+10.143.252.65	PRD
+10.177.144.15	PRD
 
-Engineering Excellence
-Using an engineering approach to solve a large-scale problem that positively impacts colleagues or clients. i.e. creating a solution to fix code vulnerabilities amongst others
-
-Valued Behaviours
-Do the right thing | Never settle | Better together
-
-Client Experience
-Enhancing customer experience end-to-end. Contributing speed-to-value and improving the quality of our product or service standards​
-
-Leadership Excellence
-High personal Impact, growing a culture focused on engineering and operational excellence, building high performing teams
-
-Drives for Results
-Contribution to T&O strategic programmes via Fit for Growth, Catalyst, Keystone, ISO 20022 to become a leading bank for our clients
-
-Individual Excellence
-Leading by example to master their craft and take charge of their career. Investing time in building skills in areas that can help develop sustainable and resilient careers supporting evolving business needs
-
-Diversity and Inclusion
-Driving commerce and prosperity through our unique diversity and enabling a culture of inclusion, respect and equality
-
-Emerging Tech-led Innovation
-Harness the power of technology via AI, blockchain to create breakthrough solution, transform customer experience and reimagine processes
-
-2.What impact did the initiative / project have? Please quantify with relevant metrics which is applicable for the project / initiative *
-Example of a metric: Cost per transaction - reduced by 25%, Touch Time / Cycle Time / Productivity -Increased by 12% (4% more than the previous year), Incremental Revenue -$12,000 (twice of last year). RoTe improvement by X%, Other examples of metrics could be Capacity Created/ Client Waiting Hours reduced / TAT/ Utilisation / Straight Through Processing (STP) / reduction in Carbon footprint / % of impact in D&I activities amongst others etc
-Total word count: 0 words. Words left: 200
-Add any extra information you would like the judging panel to consider (max 50 words) *
-
-
-3.Please share a brief writeup outlining the nomination (individual/team) for the award category you have selected (max 2000 words) *
-(Describe why the individual/team has been nominated for this award category. Outline their impact/contribution towards achieving the T&O priorities. Consider how the nominee has lived the valued behaviours. Include links to supporting documents (Pulse/SharePoint/Confluence). Paste in Feedback365 content or other feedback from colleagues, stakeholders etc.)
+subnet	environment
+10.1.6.0/24	PRD
+10.100.5.0/24	PRD
+10.108.0.0/24	PRD
+10.108.1.0/24	PRD
