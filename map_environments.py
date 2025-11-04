@@ -1,12 +1,17 @@
 """
-Environment Mapping Script for nfast_rules_cleaned.xlsx
+Environment and ITAM Mapping Script for nfast_rules_cleaned.xlsx
 
 This script performs the following tasks:
 1. For each row in nfast_rules_cleaned.xlsx, reads Source IP and Destination IP
 2. Looks up each IP in ip.xlsx and each subnet in subnet.xlsx
-3. Creates dictionaries mapping IPs/subnets to their environments
-4. Adds two new columns: Source Environment and Destination Environment
-5. Each cell contains a dictionary like {"ip1":"env1","subnet1":"env2"}
+3. Creates dictionaries mapping IPs/subnets to their environments and ITAMs
+4. Adds four new columns: 
+   - Source Environment: {"ip1":"env1","subnet1":"env2"}
+   - Destination Environment: {"ip1":"env1","subnet1":"env2"}
+   - Source ITAM: {"ip1":"itam1","subnet1":"itam2"}
+   - Destination ITAM: {"ip1":"itam1","subnet1":"itam2"}
+
+Optimized for performance with large datasets (17,000+ records)
 
 Usage:
     python map_environments.py
@@ -107,65 +112,91 @@ def is_subnet(s):
         return False
 
 
-def lookup_ip_environment(ip, ip_df):
+def lookup_ip_info(ip, ip_lookup_dict):
     """
-    Look up the environment for a given IP address
+    Look up the environment and ITAM for a given IP address using pre-built dictionary
     
     Args:
         ip: IP address string
-        ip_df: DataFrame containing IP and environment columns
+        ip_lookup_dict: Dictionary mapping IPs to (environment, itam) tuples
         
     Returns:
-        str: Environment name or None if not found
+        tuple: (environment, itam) or (None, None) if not found
     """
     # Normalize IP (remove any /32 if present)
     clean_ip = ip.split('/')[0].strip()
     
-    # Look up in IP dataframe
-    result = ip_df[ip_df['ip'].astype(str).str.strip() == clean_ip]
-    
-    if not result.empty:
-        return result.iloc[0]['environment']
-    
-    return None
+    return ip_lookup_dict.get(clean_ip, (None, None))
 
 
-def lookup_subnet_environment(subnet, subnet_df):
+def lookup_subnet_info(subnet, subnet_lookup_dict):
     """
-    Look up the environment for a given subnet
+    Look up the environment and ITAM for a given subnet using pre-built dictionary
     
     Args:
         subnet: Subnet string (with CIDR notation)
-        subnet_df: DataFrame containing subnet and environment columns
+        subnet_lookup_dict: Dictionary mapping subnets to (environment, itam) tuples
         
     Returns:
-        str: Environment name or None if not found
+        tuple: (environment, itam) or (None, None) if not found
     """
     # Normalize subnet
     clean_subnet = subnet.strip()
     
-    # Look up in subnet dataframe
-    result = subnet_df[subnet_df['subnet'].astype(str).str.strip() == clean_subnet]
-    
-    if not result.empty:
-        return result.iloc[0]['environment']
-    
-    return None
+    return subnet_lookup_dict.get(clean_subnet, (None, None))
 
 
-def create_environment_mapping(ip_list, ip_df, subnet_df):
+def build_lookup_dictionaries(ip_df, subnet_df):
     """
-    Create a dictionary mapping IPs/subnets to their environments
+    Build optimized lookup dictionaries from IP and subnet DataFrames
+    This pre-processing step significantly speeds up lookups
+    
+    Args:
+        ip_df: DataFrame containing IP, environment, and itam columns
+        subnet_df: DataFrame containing subnet, environment, and itam columns
+        
+    Returns:
+        tuple: (ip_lookup_dict, subnet_lookup_dict)
+    """
+    print("\nBuilding optimized lookup dictionaries...")
+    
+    # Build IP lookup dictionary: {ip: (environment, itam)}
+    ip_lookup_dict = {}
+    for _, row in ip_df.iterrows():
+        ip = str(row['ip']).strip()
+        env = row['environment'] if pd.notna(row['environment']) else None
+        itam = row['itam'] if pd.notna(row['itam']) else None
+        ip_lookup_dict[ip] = (env, itam)
+    
+    print(f"  ✓ IP lookup dictionary built: {len(ip_lookup_dict)} entries")
+    
+    # Build subnet lookup dictionary: {subnet: (environment, itam)}
+    subnet_lookup_dict = {}
+    for _, row in subnet_df.iterrows():
+        subnet = str(row['subnet']).strip()
+        env = row['environment'] if pd.notna(row['environment']) else None
+        itam = row['itam'] if pd.notna(row['itam']) else None
+        subnet_lookup_dict[subnet] = (env, itam)
+    
+    print(f"  ✓ Subnet lookup dictionary built: {len(subnet_lookup_dict)} entries")
+    
+    return ip_lookup_dict, subnet_lookup_dict
+
+
+def create_mappings(ip_list, ip_lookup_dict, subnet_lookup_dict):
+    """
+    Create dictionaries mapping IPs/subnets to their environments and ITAMs
     
     Args:
         ip_list: List of IPs and subnets
-        ip_df: DataFrame with IP lookups
-        subnet_df: DataFrame with subnet lookups
+        ip_lookup_dict: Dictionary with IP lookups
+        subnet_lookup_dict: Dictionary with subnet lookups
         
     Returns:
-        dict: Dictionary mapping each IP/subnet to its environment
+        tuple: (env_map, itam_map) - Two dictionaries for environment and ITAM mappings
     """
     env_map = {}
+    itam_map = {}
     
     for item in ip_list:
         item_str = str(item).strip()
@@ -175,20 +206,23 @@ def create_environment_mapping(ip_list, ip_df, subnet_df):
         
         # Check if it's an IP address (no CIDR) or has /32
         if is_ip_address(item_str) or (is_subnet(item_str) and item_str.endswith('/32')):
-            # Look up in IP file
-            env = lookup_ip_environment(item_str, ip_df)
+            # Look up in IP dictionary
+            env, itam = lookup_ip_info(item_str, ip_lookup_dict)
             if env:
-                # Store with original format (keep /32 if it was there)
                 env_map[item_str] = env
+            if itam:
+                itam_map[item_str] = itam
         
         # Check if it's a subnet (has CIDR notation and not /32)
         elif is_subnet(item_str):
-            # Look up in subnet file
-            env = lookup_subnet_environment(item_str, subnet_df)
+            # Look up in subnet dictionary
+            env, itam = lookup_subnet_info(item_str, subnet_lookup_dict)
             if env:
                 env_map[item_str] = env
+            if itam:
+                itam_map[item_str] = itam
     
-    return env_map
+    return env_map, itam_map
 
 
 def map_environments(input_file, ip_file, subnet_file, output_file, create_backup=True):
@@ -260,15 +294,18 @@ def map_environments(input_file, ip_file, subnet_file, output_file, create_backu
         print(f"Available columns: {list(rules_df.columns)}")
         return
     
-    if 'ip' not in ip_df.columns or 'environment' not in ip_df.columns:
-        print("\nERROR: 'ip' or 'environment' column not found in IP file")
+    if 'ip' not in ip_df.columns or 'environment' not in ip_df.columns or 'itam' not in ip_df.columns:
+        print("\nERROR: Required columns ('ip', 'environment', 'itam') not found in IP file")
         print(f"Available columns: {list(ip_df.columns)}")
         return
     
-    if 'subnet' not in subnet_df.columns or 'environment' not in subnet_df.columns:
-        print("\nERROR: 'subnet' or 'environment' column not found in subnet file")
+    if 'subnet' not in subnet_df.columns or 'environment' not in subnet_df.columns or 'itam' not in subnet_df.columns:
+        print("\nERROR: Required columns ('subnet', 'environment', 'itam') not found in subnet file")
         print(f"Available columns: {list(subnet_df.columns)}")
         return
+    
+    # Build optimized lookup dictionaries (huge performance improvement for large datasets)
+    ip_lookup_dict, subnet_lookup_dict = build_lookup_dictionaries(ip_df, subnet_df)
     
     print("\n" + "="*80)
     print("PROCESSING ROWS AND MAPPING ENVIRONMENTS...")
@@ -276,61 +313,79 @@ def map_environments(input_file, ip_file, subnet_file, output_file, create_backu
     
     stats = {
         'rows_processed': 0,
-        'source_mappings': 0,
-        'dest_mappings': 0,
+        'source_env_mappings': 0,
+        'dest_env_mappings': 0,
+        'source_itam_mappings': 0,
+        'dest_itam_mappings': 0,
         'source_ips_found': 0,
         'source_subnets_found': 0,
         'dest_ips_found': 0,
         'dest_subnets_found': 0
     }
     
-    # Create new columns
+    # Create new columns lists
     source_env_list = []
     dest_env_list = []
+    source_itam_list = []
+    dest_itam_list = []
     
-    # Process each row
-    for idx, row in rules_df.iterrows():
+    # Process each row - vectorize list parsing for better performance
+    print("\nParsing IP lists from all rows...")
+    source_ip_lists = rules_df['Source IP'].apply(parse_list_string)
+    dest_ip_lists = rules_df['Destination IP'].apply(parse_list_string)
+    print(f"  ✓ Parsed IP lists for {len(rules_df)} rows")
+    
+    print("\nMapping environments and ITAMs...")
+    for idx in range(len(rules_df)):
         stats['rows_processed'] += 1
         
-        # Parse Source IP
-        source_ips = parse_list_string(row['Source IP'])
-        source_env_map = create_environment_mapping(source_ips, ip_df, subnet_df)
+        # Get parsed lists
+        source_ips = source_ip_lists.iloc[idx]
+        dest_ips = dest_ip_lists.iloc[idx]
+        
+        # Create mappings for source
+        source_env_map, source_itam_map = create_mappings(source_ips, ip_lookup_dict, subnet_lookup_dict)
         
         # Count findings
-        for key, val in source_env_map.items():
+        for key in source_env_map.keys():
             if '/' in key and not key.endswith('/32'):
                 stats['source_subnets_found'] += 1
             else:
                 stats['source_ips_found'] += 1
         
-        stats['source_mappings'] += len(source_env_map)
+        stats['source_env_mappings'] += len(source_env_map)
+        stats['source_itam_mappings'] += len(source_itam_map)
         
-        # Parse Destination IP
-        dest_ips = parse_list_string(row['Destination IP'])
-        dest_env_map = create_environment_mapping(dest_ips, ip_df, subnet_df)
+        # Create mappings for destination
+        dest_env_map, dest_itam_map = create_mappings(dest_ips, ip_lookup_dict, subnet_lookup_dict)
         
         # Count findings
-        for key, val in dest_env_map.items():
+        for key in dest_env_map.keys():
             if '/' in key and not key.endswith('/32'):
                 stats['dest_subnets_found'] += 1
             else:
                 stats['dest_ips_found'] += 1
         
-        stats['dest_mappings'] += len(dest_env_map)
+        stats['dest_env_mappings'] += len(dest_env_map)
+        stats['dest_itam_mappings'] += len(dest_itam_map)
         
         # Store as string representation of dictionary
         source_env_list.append(str(source_env_map) if source_env_map else '{}')
         dest_env_list.append(str(dest_env_map) if dest_env_map else '{}')
+        source_itam_list.append(str(source_itam_map) if source_itam_map else '{}')
+        dest_itam_list.append(str(dest_itam_map) if dest_itam_map else '{}')
         
-        # Print progress for every 100 rows
-        if (idx + 1) % 100 == 0:
-            print(f"  Processed {idx + 1} rows...")
+        # Print progress for every 1000 rows (adjusted for larger dataset)
+        if (idx + 1) % 1000 == 0:
+            print(f"  Processed {idx + 1:,} / {len(rules_df):,} rows ({(idx+1)/len(rules_df)*100:.1f}%)...")
     
     # Add new columns to dataframe
     rules_df['Source Environment'] = source_env_list
     rules_df['Destination Environment'] = dest_env_list
+    rules_df['Source ITAM'] = source_itam_list
+    rules_df['Destination ITAM'] = dest_itam_list
     
-    print(f"\n✓ All {stats['rows_processed']} rows processed")
+    print(f"\n✓ All {stats['rows_processed']:,} rows processed")
     
     # Save to Excel
     print(f"\nSaving results to: {output_file}...")
@@ -345,17 +400,23 @@ def map_environments(input_file, ip_file, subnet_file, output_file, create_backu
     print("\n" + "="*80)
     print("SUMMARY:")
     print("="*80)
-    print(f"  Rows processed:                {stats['rows_processed']}")
-    print(f"  Total source mappings found:   {stats['source_mappings']}")
-    print(f"    - Source IPs mapped:         {stats['source_ips_found']}")
-    print(f"    - Source subnets mapped:     {stats['source_subnets_found']}")
-    print(f"  Total dest mappings found:     {stats['dest_mappings']}")
-    print(f"    - Destination IPs mapped:    {stats['dest_ips_found']}")
-    print(f"    - Destination subnets mapped: {stats['dest_subnets_found']}")
-    print("\n✓ Environment mapping completed successfully!")
+    print(f"  Rows processed:                   {stats['rows_processed']:,}")
+    print(f"\n  SOURCE MAPPINGS:")
+    print(f"    Environment mappings found:     {stats['source_env_mappings']:,}")
+    print(f"    ITAM mappings found:            {stats['source_itam_mappings']:,}")
+    print(f"      - IPs mapped:                 {stats['source_ips_found']:,}")
+    print(f"      - Subnets mapped:             {stats['source_subnets_found']:,}")
+    print(f"\n  DESTINATION MAPPINGS:")
+    print(f"    Environment mappings found:     {stats['dest_env_mappings']:,}")
+    print(f"    ITAM mappings found:            {stats['dest_itam_mappings']:,}")
+    print(f"      - IPs mapped:                 {stats['dest_ips_found']:,}")
+    print(f"      - Subnets mapped:             {stats['dest_subnets_found']:,}")
+    print("\n✓ Environment and ITAM mapping completed successfully!")
     print(f"\nNew columns added:")
     print(f"  - Source Environment")
     print(f"  - Destination Environment")
+    print(f"  - Source ITAM")
+    print(f"  - Destination ITAM")
     print("="*80)
 
 
