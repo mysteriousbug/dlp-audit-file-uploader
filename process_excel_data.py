@@ -69,6 +69,35 @@ def format_timedelta(td):
     
     return result
 
+def extract_time_components(td):
+    """
+    Extract individual time components from timedelta
+    Returns: (days, hours, minutes, seconds) as integers
+    """
+    if pd.isna(td):
+        return None, None, None, None
+    
+    total_seconds = int(td.total_seconds())
+    is_negative = total_seconds < 0
+    total_seconds = abs(total_seconds)
+    
+    days = total_seconds // 86400
+    hours = (total_seconds % 86400) // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+    
+    # Apply negative sign to days if the difference is negative
+    if is_negative:
+        days = -days if days > 0 else 0
+        if days == 0:
+            hours = -hours if hours > 0 else 0
+            if hours == 0:
+                minutes = -minutes if minutes > 0 else 0
+                if minutes == 0:
+                    seconds = -seconds
+    
+    return int(days), int(hours), int(minutes), int(seconds)
+
 def process_data(input_file, output_file=None):
     """
     Process Excel file with datetime columns and calculate differences
@@ -124,16 +153,25 @@ def process_data(input_file, output_file=None):
     # Create human-readable format
     df['difference_formatted'] = df['difference_timedelta'].apply(format_timedelta)
     
+    # Extract individual time components
+    df[['diff_days', 'diff_hours', 'diff_minutes', 'diff_seconds']] = df['difference_timedelta'].apply(
+        lambda x: pd.Series(extract_time_components(x))
+    )
+    
     # Create output dataframe with cleaned data
     output_df = pd.DataFrame({
         'sys_created_on_original': df['sys_created_on'],
         'sys_created_on_clean': df['sys_created_on_clean'],
         'outage_start_time_original': df['u_service_offering_outage_start_time'],
         'outage_start_time_clean': df['outage_start_time_clean'],
-        'difference_formatted': df['difference_formatted'],
-        'difference_hours': df['difference_hours'].round(2),
-        'difference_minutes': df['difference_minutes'].round(2),
-        'difference_seconds': df['difference_seconds'].round(2),
+        'total_difference': df['difference_formatted'],
+        'days': df['diff_days'].astype('Int64'),  # Int64 allows NaN values
+        'hours': df['diff_hours'].astype('Int64'),
+        'minutes': df['diff_minutes'].astype('Int64'),
+        'seconds': df['diff_seconds'].astype('Int64'),
+        'total_hours': df['difference_hours'].round(2),
+        'total_minutes': df['difference_minutes'].round(2),
+        'total_seconds': df['difference_seconds'].round(2),
     })
     
     # Generate output filename if not provided
@@ -194,17 +232,17 @@ def process_data(input_file, output_file=None):
     print("\n" + "="*80)
     print("RECORDS WITH LARGEST TIME DIFFERENCES (Top 5)")
     print("="*80)
-    largest_diffs = output_df.nlargest(5, 'difference_hours')
+    largest_diffs = output_df.nlargest(5, 'total_hours')
     print(largest_diffs[['sys_created_on_original', 'outage_start_time_original', 
-                        'difference_formatted', 'difference_hours']].to_string(index=False))
+                        'total_difference', 'days', 'hours', 'minutes', 'seconds']].to_string(index=False))
     
     # Show records with smallest/negative differences
     print("\n" + "="*80)
     print("RECORDS WITH SMALLEST/NEGATIVE TIME DIFFERENCES (Bottom 5)")
     print("="*80)
-    smallest_diffs = output_df.nsmallest(5, 'difference_hours')
+    smallest_diffs = output_df.nsmallest(5, 'total_hours')
     print(smallest_diffs[['sys_created_on_original', 'outage_start_time_original', 
-                         'difference_formatted', 'difference_hours']].to_string(index=False))
+                         'total_difference', 'days', 'hours', 'minutes', 'seconds']].to_string(index=False))
     
     print("\n" + "="*80)
     print("✅ PROCESSING COMPLETE!")
