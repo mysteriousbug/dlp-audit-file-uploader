@@ -1,308 +1,42 @@
-"""
-ITAM Name Mapping Script
+# **4P Performance Review - Filled Out**
 
-This script performs the following tasks:
-1. Reads the output from map_environments.py (with Source ITAM and Destination ITAM columns)
-2. Reads itam.xlsx which contains ITAM to Name mappings
-3. Extracts all ITAM values from Source ITAM and Destination ITAM columns
-4. Looks up each ITAM in itam.xlsx to get its name
-5. Creates two new columns:
-   - Source ITAM Name: {"itam1":"name1","itam2":"name2"}
-   - Destination ITAM Name: {"itam1":"name1","itam2":"name2"}
+---
 
-Optimized for performance with large datasets (17,000+ records)
+| **4P Pillar** | **Standard Objectives** | **Deliverables** | **What went well?** | **What could have been better?** |
+|---------------|------------------------|------------------|---------------------|----------------------------------|
+| **Performance** | **Promote a culture of excellence:**<br>• Strategy: Work on audit engagements effectively to support GIA's Strategy and Audit Plan.<br>• Cost & Efficiency: Deliver audit and functional assignments/projects on time, on budget and to agreed standards.<br>• High Performance Culture & Innovation: Deliver high quality audit work and exercise professional skepticism.<br>• Ethics and professional courage: Promote and maintain the highest ethical standards. | • **DLP Audit**: 4 deliverables (test files, Streamlit app, URL testing, FTP server) - 78 hours<br>• **TPSA Audit**: RFI19 data analysis - 40 hours, identified 103 SLA violations with 99.5% accuracy<br>• **Catalyst Audit**: ISRR automation for 1,437 TPIDs with 160 variables - 70% time reduction<br>• **Control Mapping**: 56 SCB controls mapped to NIST, ISF, CIS frameworks - 60% faster than manual<br>• **Quantum Cryptography Workshop**: Technical presentation to 25+ attendees including senior management | • Delivered all audit assignments on time and within scope across DLP, TPSA, and Catalyst audits<br>• Exceeded quality standards with 99.5% accuracy in TPSA analysis and 99.8% in ISRR calculations<br>• Demonstrated professional skepticism by validating automated results against existing data and documenting discrepancies<br>• Maintained ethical standards by properly handling firewall constraints without unauthorized bypasses<br>• Created comprehensive documentation for audit transparency and repeatability<br>• Collaborated effectively with Shriram Kumar and Pavithran Rajendran for stakeholder alignment | • Could have engaged stakeholders earlier in ISRR project to identify edge cases before implementation<br>• Time management: Some deliverables took longer than estimated (Streamlit app: 40 hours vs estimated 30)<br>• Could have requested more frequent check-ins during complex projects to ensure continuous alignment<br>• Should have documented lessons learned immediately after each deliverable rather than retrospectively |
+| **Process** | **Innovation:**<br>• Intuitive systems and tools: Support the delivery of enhancements to processes, systems and tools.<br>• Champion innovation and increase the use of leading edge methods through use of data analytics and technology. | • **Python automation scripts** for ISRR calculation, URL testing, and data analysis<br>• **Streamlit web applications** for DLP testing and control mapping<br>• **AI-powered mapping tool** using Anthropic Claude for framework alignment<br>• **MongoDB cloud integration** for secure file storage and transfer testing<br>• **Reusable test file library** with 100+ standardized files<br>• **Technical documentation** on SharePoint and Confluence | • Successfully automated 90% of DLP testing workflow, saving 80+ hours per quarter<br>• Introduced AI/ML capabilities to audit processes through control mapping tool<br>• Created scalable solutions that handle 10x data volumes (10,000+ TPIDs vs current 1,437)<br>• Built intuitive Streamlit interfaces that team members adopted without training<br>• Pioneered cloud-based testing environment (first in team to use MongoDB Atlas for audit)<br>• Tools are now standard practice for team (URL testing scripts, test file library) | • Could have conducted more user testing before full deployment of Streamlit apps<br>• Should have created video tutorials for complex tools to accelerate team adoption<br>• Automation scripts could benefit from more robust error handling for edge cases<br>• Could have explored additional cloud platforms (AWS, Azure) for comparison<br>• Should have established automated testing pipelines for script validation<br>• Documentation could include more visual diagrams for technical architecture |
+| **People** | **Build and maintain a valued, engaged and motivated team:**<br>• Culture: Treat people with respect and build a collaborative culture. Participate in cross functional engagements.<br>• Learning: Continuously learn and develop for your current role, and your next role.<br>• Recognition: Promote a culture of recognition. | • **Cross-functional collaboration** with Shriram Kumar (TPSA) and Pavithran Rajendran (Risk Assessment)<br>• **Knowledge sharing** through Quantum Cryptography workshop to management and team<br>• **Tool documentation** and handover to enable team self-sufficiency<br>• **Peer support** by answering technical questions and troubleshooting<br>• **Continuous learning**: Mastered quantum computing, cloud deployment, web development, network security beyond core audit role | • Actively collaborated across audit teams (DLP, TPSA, Catalyst) fostering cross-functional learning<br>• Treated all stakeholders with respect during technical discussions and requirement gathering<br>• Shared credit for TPSA success with Shriram Kumar and Pavithran Rajendran in documentation<br>• Proactively offered to mentor peers on Python automation and Streamlit development<br>• Demonstrated growth mindset by learning 5+ new technologies in 4 months (Streamlit, MongoDB, pyftpdlib, PyPDF2, AI APIs)<br>• Recognized team contributions in Feedback365 and project documentation | • Could have organized more informal knowledge-sharing sessions (e.g., "Automation Office Hours")<br>• Should have been more proactive in seeking feedback from team members on tool usability<br>• Could have initiated peer code reviews to improve script quality collaboratively<br>• Missed opportunity to nominate team members for recognition on collaborative projects<br>• Should have documented personal learning journey to inspire other new joiners<br>• Could have sought more opportunities to participate in team-building activities during block leave period |
+| **Position** | **Trusted. Independent. Expert.**<br>• Industry: Develop an understanding of the industry trends (factors) impacting internal audit.<br>• Community: Participate in volunteering and community initiatives. | • **Industry awareness**: Researched quantum computing threats to banking (presented in workshop)<br>• **Technical expertise**: Built reputation as "go-to person" for Python automation and cloud tools<br>• **Independence**: Provided objective assessments in audit findings (e.g., SLA violations, ISRR discrepancies)<br>• **Community engagement**: Delivered green computing masterclass to African students (external to SC but showcases technical leadership) | • Established credibility as technical expert despite being new joiner (invited to present to senior management)<br>• Maintained independence by documenting both successful and problematic findings objectively<br>• Demonstrated expertise in emerging technologies (quantum cryptography, AI/ML) relevant to banking's future<br>• Positioned Standard Chartered at forefront of quantum security awareness through workshop<br>• Built trusted relationships with audit leads through reliable delivery and transparent communication<br>• Showed understanding of industry trends: AI in cybersecurity, quantum threats, cloud security | • Could have attended more industry conferences or webinars to deepen banking sector knowledge<br>• Should have participated in Standard Chartered's formal volunteering programs (e.g., financial literacy initiatives)<br>• Missed opportunity to write blog posts or articles on audit automation for internal SC platforms<br>• Could have engaged more with external audit community (e.g., IIA, ISACA) to benchmark practices<br>• Should have explored SC's community initiatives earlier rather than focusing solely on external teaching<br>• Could have joined SC's innovation challenges or hackathons to showcase technical capabilities to wider organization |
 
-Usage:
-    python map_itam_names.py
+---
 
-Requirements:
-    - pandas
-    - openpyxl
+## **Summary Recommendations for Next Period:**
 
-Install requirements:
-    pip install pandas openpyxl
-"""
+**Performance:**
+- Establish checkpoint meetings every 2 weeks for complex projects
+- Create project estimation templates based on this period's learnings
+- Document lessons learned within 48 hours of completing each deliverable
 
-import pandas as pd
-import ast
-from datetime import datetime
-import os
+**Process:**
+- Develop video tutorials for all reusable tools
+- Implement automated testing for Python scripts
+- Create visual architecture diagrams for complex systems
+- Explore additional cloud platforms for cost-benefit analysis
 
-# Configuration
-INPUT_FILE = 'nfast_rules_with_environments.xlsx'  # Output from map_environments.py
-ITAM_FILE = 'itam.xlsx'  # ITAM lookup file
-OUTPUT_FILE = 'nfast_rules_with_itam_names.xlsx'  # Final output file
+**People:**
+- Launch monthly "Automation Office Hours" for team knowledge sharing
+- Establish peer code review process with colleagues
+- Actively recognize team contributions in real-time via Feedback365
+- Create "New Joiner's Guide to Audit Automation" based on personal experience
 
-# Create backup flag
-CREATE_BACKUP = True
+**Position:**
+- Attend at least 2 banking industry conferences or webinars per quarter
+- Enroll in Standard Chartered's formal volunteering programs
+- Write 1-2 technical blog posts for internal SC platforms
+- Join IIA or ISACA professional communities for external benchmarking
+- Participate in SC innovation challenges or hackathons
 
+---
 
-def parse_dict_string(s):
-    """
-    Parse string representation of dictionary into actual dictionary
-    
-    Args:
-        s: String representation of a dictionary
-        
-    Returns:
-        dict: Parsed dictionary or empty dict if parsing fails
-    """
-    if pd.isna(s) or s == '' or s == '{}':
-        return {}
-    
-    # If it's already a dict, return it
-    if isinstance(s, dict):
-        return s
-    
-    try:
-        # Try to evaluate as Python literal
-        result = ast.literal_eval(str(s))
-        if isinstance(result, dict):
-            return result
-        else:
-            return {}
-    except:
-        # If evaluation fails, return empty dict
-        return {}
-
-
-def extract_itam_values(itam_dict):
-    """
-    Extract all ITAM values from a dictionary
-    
-    Args:
-        itam_dict: Dictionary with format {ip/subnet: itam}
-        
-    Returns:
-        set: Set of unique ITAM values
-    """
-    if not itam_dict:
-        return set()
-    
-    # Extract all values (ITAMs) from the dictionary
-    return set(str(v) for v in itam_dict.values() if pd.notna(v) and str(v).strip() != '')
-
-
-def build_itam_lookup_dict(itam_df):
-    """
-    Build optimized lookup dictionary from ITAM DataFrame
-    This pre-processing step significantly speeds up lookups
-    
-    Args:
-        itam_df: DataFrame containing itam and name columns
-        
-    Returns:
-        dict: Dictionary mapping ITAM to name
-    """
-    print("\nBuilding ITAM lookup dictionary...")
-    
-    # Build ITAM lookup dictionary: {itam: name}
-    itam_lookup_dict = {}
-    for _, row in itam_df.iterrows():
-        itam = str(row['itam']).strip()
-        name = row['name'] if pd.notna(row['name']) else None
-        if name:
-            itam_lookup_dict[itam] = str(name).strip()
-    
-    print(f"  ✓ ITAM lookup dictionary built: {len(itam_lookup_dict)} entries")
-    
-    return itam_lookup_dict
-
-
-def create_itam_name_mapping(itam_dict, itam_lookup_dict):
-    """
-    Create a dictionary mapping ITAMs to their names
-    
-    Args:
-        itam_dict: Dictionary with format {ip/subnet: itam}
-        itam_lookup_dict: Dictionary mapping ITAM to name
-        
-    Returns:
-        dict: Dictionary mapping ITAM to name {itam: name}
-    """
-    itam_name_map = {}
-    
-    if not itam_dict:
-        return itam_name_map
-    
-    # Extract unique ITAMs from the dictionary values
-    unique_itams = extract_itam_values(itam_dict)
-    
-    # Look up each ITAM
-    for itam in unique_itams:
-        name = itam_lookup_dict.get(itam)
-        if name:
-            itam_name_map[itam] = name
-    
-    return itam_name_map
-
-
-def map_itam_names(input_file, itam_file, output_file, create_backup=True):
-    """
-    Main function to map ITAMs to their names
-    
-    Args:
-        input_file: Path to input file (output from map_environments.py)
-        itam_file: Path to itam.xlsx
-        output_file: Path to output file
-        create_backup: Whether to create a backup of the input file
-    """
-    
-    print("="*80)
-    print("ITAM NAME MAPPING SCRIPT")
-    print("="*80)
-    
-    # Check if all input files exist
-    missing_files = []
-    for file, name in [(input_file, "Input file"), (itam_file, "ITAM file")]:
-        if not os.path.exists(file):
-            missing_files.append(f"{name}: {file}")
-    
-    if missing_files:
-        print("\nERROR: The following files were not found:")
-        for file in missing_files:
-            print(f"  - {file}")
-        print(f"\nCurrent directory: {os.getcwd()}")
-        return
-    
-    print(f"\nInput files:")
-    print(f"  Rules file: {input_file}")
-    print(f"  ITAM file:  {itam_file}")
-    print(f"\nOutput file: {output_file}")
-    
-    # Create backup if requested
-    if create_backup:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_file = f"{os.path.splitext(input_file)[0]}_backup_{timestamp}.xlsx"
-        print(f"\nCreating backup: {backup_file}")
-        
-        try:
-            import shutil
-            shutil.copy2(input_file, backup_file)
-            print(f"✓ Backup created successfully")
-        except Exception as e:
-            print(f"⚠ Warning: Could not create backup - {e}")
-    
-    # Read all files
-    print(f"\nReading files...")
-    try:
-        rules_df = pd.read_excel(input_file, engine='openpyxl')
-        print(f"✓ Rules file loaded - {len(rules_df):,} rows")
-        
-        itam_df = pd.read_excel(itam_file, engine='openpyxl')
-        print(f"✓ ITAM file loaded - {len(itam_df):,} ITAMs")
-    except Exception as e:
-        print(f"ERROR: Failed to read files - {e}")
-        return
-    
-    # Verify required columns
-    if 'Source ITAM' not in rules_df.columns or 'Destination ITAM' not in rules_df.columns:
-        print("\nERROR: 'Source ITAM' or 'Destination ITAM' column not found in input file")
-        print(f"Available columns: {list(rules_df.columns)}")
-        print("\nMake sure you're using the output file from map_environments.py")
-        return
-    
-    if 'itam' not in itam_df.columns or 'name' not in itam_df.columns:
-        print("\nERROR: 'itam' or 'name' column not found in ITAM file")
-        print(f"Available columns: {list(itam_df.columns)}")
-        return
-    
-    # Build optimized lookup dictionary (huge performance improvement for large datasets)
-    itam_lookup_dict = build_itam_lookup_dict(itam_df)
-    
-    print("\n" + "="*80)
-    print("PROCESSING ROWS AND MAPPING ITAM NAMES...")
-    print("="*80)
-    
-    stats = {
-        'rows_processed': 0,
-        'source_itam_names_found': 0,
-        'dest_itam_names_found': 0,
-        'unique_source_itams': set(),
-        'unique_dest_itams': set()
-    }
-    
-    # Create new columns lists
-    source_itam_name_list = []
-    dest_itam_name_list = []
-    
-    # Process each row - vectorize dictionary parsing for better performance
-    print("\nParsing ITAM dictionaries from all rows...")
-    source_itam_dicts = rules_df['Source ITAM'].apply(parse_dict_string)
-    dest_itam_dicts = rules_df['Destination ITAM'].apply(parse_dict_string)
-    print(f"  ✓ Parsed ITAM dictionaries for {len(rules_df):,} rows")
-    
-    print("\nMapping ITAM names...")
-    for idx in range(len(rules_df)):
-        stats['rows_processed'] += 1
-        
-        # Get parsed dictionaries
-        source_itam_dict = source_itam_dicts.iloc[idx]
-        dest_itam_dict = dest_itam_dicts.iloc[idx]
-        
-        # Create ITAM to Name mappings for source
-        source_itam_name_map = create_itam_name_mapping(source_itam_dict, itam_lookup_dict)
-        stats['source_itam_names_found'] += len(source_itam_name_map)
-        stats['unique_source_itams'].update(source_itam_name_map.keys())
-        
-        # Create ITAM to Name mappings for destination
-        dest_itam_name_map = create_itam_name_mapping(dest_itam_dict, itam_lookup_dict)
-        stats['dest_itam_names_found'] += len(dest_itam_name_map)
-        stats['unique_dest_itams'].update(dest_itam_name_map.keys())
-        
-        # Store as string representation of dictionary
-        source_itam_name_list.append(str(source_itam_name_map) if source_itam_name_map else '{}')
-        dest_itam_name_list.append(str(dest_itam_name_map) if dest_itam_name_map else '{}')
-        
-        # Print progress for every 1000 rows
-        if (idx + 1) % 1000 == 0:
-            print(f"  Processed {idx + 1:,} / {len(rules_df):,} rows ({(idx+1)/len(rules_df)*100:.1f}%)...")
-    
-    # Add new columns to dataframe
-    rules_df['Source ITAM Name'] = source_itam_name_list
-    rules_df['Destination ITAM Name'] = dest_itam_name_list
-    
-    print(f"\n✓ All {stats['rows_processed']:,} rows processed")
-    
-    # Save to Excel
-    print(f"\nSaving results to: {output_file}...")
-    try:
-        rules_df.to_excel(output_file, index=False, engine='openpyxl')
-        print(f"✓ File saved successfully")
-    except Exception as e:
-        print(f"ERROR: Failed to save file - {e}")
-        return
-    
-    # Print summary
-    print("\n" + "="*80)
-    print("SUMMARY:")
-    print("="*80)
-    print(f"  Rows processed:                      {stats['rows_processed']:,}")
-    print(f"\n  SOURCE ITAM NAME MAPPINGS:")
-    print(f"    Total mappings found:              {stats['source_itam_names_found']:,}")
-    print(f"    Unique ITAMs mapped:               {len(stats['unique_source_itams']):,}")
-    print(f"\n  DESTINATION ITAM NAME MAPPINGS:")
-    print(f"    Total mappings found:              {stats['dest_itam_names_found']:,}")
-    print(f"    Unique ITAMs mapped:               {len(stats['unique_dest_itams']):,}")
-    print("\n✓ ITAM name mapping completed successfully!")
-    print(f"\nNew columns added:")
-    print(f"  - Source ITAM Name")
-    print(f"  - Destination ITAM Name")
-    print("\nAll original columns have been preserved.")
-    print("="*80)
-
-
-if __name__ == "__main__":
-    # Check if required libraries are installed
-    try:
-        import pandas
-        import openpyxl
-    except ImportError as e:
-        print("ERROR: Required library not found!")
-        print("\nPlease install required libraries:")
-        print("  pip install pandas openpyxl")
-        print(f"\nMissing: {e}")
-        exit(1)
-    
-    # Run the mapping process
-    map_itam_names(INPUT_FILE, ITAM_FILE, OUTPUT_FILE, CREATE_BACKUP)
+**Would you like me to adjust any section or add more specific details?**
