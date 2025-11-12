@@ -1,5 +1,0 @@
-next task:
-for each row in the nfast_rules_cleaned.xlsx, go to the Source IP. if you find an IP, go to the ip.xlsx file and check if that ip is present. if yes, read the environment column in the ip.xlsx. save this value as a dictionary - {"ip":"env"}. if you find a subnet, go to subnet.xlsx and do the same. 
-then, for the end result, create two new columns in nfast_rules_cleaned.xlsx called Source Environment and Destination Environment. Source Environment column should have the dictionary {"ip1":"env1","subnet1":"env2"...}.
-destination column should also have a similar dictionary.
-write python code for this in a new script.
