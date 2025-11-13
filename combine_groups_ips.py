@@ -2,8 +2,9 @@
 Simple Combination Script for nfast_rules.xlsx
 
 This script performs the following task:
-- Combines all entries from Source Groups with Source IP (no filtering, no cleaning)
-- Combines all entries from Destination Groups with Destination IP (no filtering, no cleaning)
+- Combines all entries from Source Groups with Source IP (keeps duplicates, keeps empty values)
+- Combines all entries from Destination Groups with Destination IP (keeps duplicates, keeps empty values)
+- No filtering, no checking, no cleaning - just pure combination
 
 Usage:
     python combine_groups_ips.py
@@ -131,17 +132,8 @@ def combine_data(input_file, output_file, create_backup=True):
         source_groups = parse_list_string(row['Source Groups'])
         source_ips = parse_list_string(row['Source IP'])
         
-        # Combine all items (no filtering, no checking)
+        # Combine all items - no filtering, no duplicate removal, keep everything as is
         combined_source = source_groups + source_ips
-        
-        # Remove duplicates while preserving order
-        seen = set()
-        combined_source_unique = []
-        for item in combined_source:
-            item_str = str(item)
-            if item_str not in seen:
-                seen.add(item_str)
-                combined_source_unique.append(item)
         
         stats['source_items_added'] += len(source_groups)
         
@@ -149,23 +141,14 @@ def combine_data(input_file, output_file, create_backup=True):
         dest_groups = parse_list_string(row['Destination Groups'])
         dest_ips = parse_list_string(row['Destination IP'])
         
-        # Combine all items (no filtering, no checking)
+        # Combine all items - no filtering, no duplicate removal, keep everything as is
         combined_dest = dest_groups + dest_ips
-        
-        # Remove duplicates while preserving order
-        seen = set()
-        combined_dest_unique = []
-        for item in combined_dest:
-            item_str = str(item)
-            if item_str not in seen:
-                seen.add(item_str)
-                combined_dest_unique.append(item)
         
         stats['dest_items_added'] += len(dest_groups)
         
         # Update the dataframe (convert back to string representation of list)
-        df.at[idx, 'Source IP'] = str(combined_source_unique)
-        df.at[idx, 'Destination IP'] = str(combined_dest_unique)
+        df.at[idx, 'Source IP'] = str(combined_source)
+        df.at[idx, 'Destination IP'] = str(combined_dest)
         
         # Print progress for every 1000 rows
         if (idx + 1) % 1000 == 0:
@@ -191,10 +174,11 @@ def combine_data(input_file, output_file, create_backup=True):
     print(f"  Destination Groups items added: {stats['dest_items_added']:,}")
     print("\n✓ Combination completed successfully!")
     print("\nWhat was done:")
-    print("  - All items from Source Groups were added to Source IP")
-    print("  - All items from Destination Groups were added to Destination IP")
-    print("  - Duplicates were removed from the combined lists")
-    print("  - No filtering or cleaning was applied")
+    print("  - All items from Source Groups were added to Source IP (as is)")
+    print("  - All items from Destination Groups were added to Destination IP (as is)")
+    print("  - Duplicates were kept")
+    print("  - Empty values were kept")
+    print("  - No filtering, no checking, no cleaning")
     print("="*80)
 
 
