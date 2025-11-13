@@ -1,0 +1,18 @@
+Good job. There are a few changes now. So let me outline the new requirements:
+Input Files:
+1. nfast_rules.xlsx
+2. ip.xlsx
+3. ipam_subnet.xlsx
+4. dev_subnet.xlsx
+5. staging_subnet.xlsx
+
+Output Format:
+Two new columns
+1. Source IP Analysis : {"source ip/subnet":"File Name", "Environment","Function","Location","ITAM ID", "ITAM Name"}
+2. Destination IP Analysis: {"destination ip/subnet":"File Name", "Environment","Function","Location","ITAM ID", "ITAM Name"}
+
+Logic:
+1. refer base file nfast_rules.xlsx. for each source ip, map to ip.xlsx. if mapped, collect file name (here, ip.xlsx) , environment, location, itam, itam name from ip.xlsx. All column names will remain as it was in the previous prompt.
+2. if the source entry is a subnet, map it to ipam_subnet.xlsx. if not found, map to dev_subnet.xlsx and staging_subnet.xlsx
+in whichever file there is a match, store that filename, environment, location, itam, itam name from that subnet file.
+Note: dev_subnet.xlsx and staging_subnet.xlsx have the same schema as ipam_subnet.xlsx
