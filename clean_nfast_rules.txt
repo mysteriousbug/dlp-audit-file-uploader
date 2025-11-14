@@ -1,0 +1,48 @@
+
+
+Key Activities Overview
+SI	Key Activities	Sub-Key Activities	Notes
+1	Backup & Storage	 	Backup
+•	Automation – Write to infrastructure view in Cohesity
+•	Tasks – Monitor backup completion, fix failures, configure backup services, collaborate with internal backup team based on the nature of failure 
+•	Storage and backup controls are under Infrastructure and Platforms Management Team (GPO Hemanth)
+•	Entire backup process has automated builds, and testing is done manually as a part of OAT validation
+Storage
+•	Vijay’s team is a consumer of storage services, and is responsible for allocation monitoring
+•	This is performed based on global monitoring standards
+2	Access Management	a) Access Matrix	Access Matrix
+•	Roles are defined by Vijay’s team (based on product specific access privileges)
+
+		b) DBA owned ID	
+3	Secure Configuration Management – Define TIPs	 	TIPs
+•	Defined based on ICS controls, application standards for each product and industry benchmarks 
+•	5 database tools used by the team – Oracle DB, Postgres, MS SQL, Mongo DB, db2
+•	Query cmdb to understand if tool is bundled/not (filter criteria can be provided by Vijay)
+
+4	Build	a) Infrastructure builds & maintain	Database
+•	Physical Servers
+•	Virtual Machines
+•	Shared Databases (Database-as-a-Service)
+GDC East (HK)
+•	Virtual DaaS after Catalyst
+•	Databases in dedicated database VM clusters
+•	Robust devops pipeline for automated infrastructure builds	GDC West
+•	DaaS
+•	Databases in General Purpose VMs
+•	No devops pipeline for automated infrastructure builds
+
+		b) New DB deployments	New DB deployments are automated except for Oracle DB (which is manual)
+		b) Roll outs (SAT/OAT)	Deploy golden image -> Secure certificate as part of TIP -> OAT Template (list of controls for operational acceptance)
+5	Operations	a) Alert Management	
+		b) Incident Management	
+		c) Change Management	
+		d) Patch deployment	
+		e) Compliance (ICS/IVR)	
+		f) Monitoring	
+		g) DR	
+6	Product engineering	a) New product releases	
+		b) Version controls	
+		c) CVE releases	
+		d) Monitoring (GMS)	
+ 
+
