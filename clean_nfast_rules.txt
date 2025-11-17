@@ -1,3 +1,4 @@
+code:
 import pandas as pd
 
 change_i1_df = pd.read_csv(change_i1_path).reset_index(drop=True)
@@ -36,3 +37,21 @@ print(incident_change_df.columns)
 
 # Write the final data frame to a CSV file
 incident_change_df.to_csv('incident_change.csv', index=False)
+
+error: PS C:\Users\2019778\OneDrive - Standard Chartered Bank\Documents\Downloads\work\IPM_Audit> & "C:/Program Files/Python313/python.exe" "c:/Users/2019778/OneDrive - Standard Chartered Bank/Documents/Downloads/work/IPM_Audit/C1/da.py"
+c:\Users\2019778\OneDrive - Standard Chartered Bank\Documents\Downloads\work\IPM_Audit\C1\da.py:14: DtypeWarning: Columns (12,15,30,32) have mixed types. Specify dtype option on import or set low_memory=False.
+  change_i3_df = pd.read_csv(change_i3_path).reset_index(drop=True)
+c:\Users\2019778\OneDrive - Standard Chartered Bank\Documents\Downloads\work\IPM_Audit\C1\da.py:20: DtypeWarning: Columns (21,22,25,26,35,37) have mixed types. Specify dtype option on import or set low_memory=False.
+  i5_df = pd.read_csv(i5_path).reset_index(drop=True)
+Traceback (most recent call last):
+  File "c:\Users\2019778\OneDrive - Standard Chartered Bank\Documents\Downloads\work\IPM_Audit\C1\da.py", line 32, in <module>
+    i1_to_i5_df = pd.concat([i1_i2_i3_final_df, i4_i5_final_df], ignore_index=False)
+  File "C:\Users\2019778\AppData\Roaming\Python\Python313\site-packages\pandas\core\reshape\concat.py", line 395, in concat
+    return op.get_result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\2019778\AppData\Roaming\Python\Python313\site-packages\pandas\core\reshape\concat.py", line 680, in get_result
+    indexers[ax] = obj_labels.get_indexer(new_labels)
+                   ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Users\2019778\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\base.py", line 3892, in get_indexer
+    raise InvalidIndexError(self._requires_unique_msg)
+pandas.errors.InvalidIndexError: Reindexing only valid with uniquely valued Index objects
