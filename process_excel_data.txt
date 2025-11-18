@@ -2,6 +2,7 @@ import pandas as pd
 from datetime import datetime
 import numpy as np
 import sys
+from pathlib import Path
 
 def parse_datetime(date_str):
     """Parse datetime strings with multiple formats"""
@@ -18,6 +19,8 @@ def parse_datetime(date_str):
         '%m/%d/%Y %H:%M',     # 2/8/2025 10:29
         '%d/%m/%Y %H:%M:%S',  # potential format
         '%m/%d/%Y %H:%M:%S',  # potential format
+        '%Y-%m-%d %H:%M:%S',  # ISO format
+        '%Y-%m-%d %H:%M',     # ISO format short
     ]
     
     for fmt in formats:
@@ -35,69 +38,40 @@ def parse_datetime(date_str):
         except:
             return None
 
-def format_timedelta(td):
-    """Convert timedelta to human-readable format"""
-    if pd.isna(td):
-        return 'Missing Data'
+def categorize_months(months):
+    """
+    Categorize months into slabs and return Yes/No for each slab
+    Returns: dict with keys for each slab
+    """
+    if pd.isna(months):
+        return {
+            '<=3 months': 'No',
+            '>3 and <=6 months': 'No',
+            '>6 and <=9 months': 'No',
+            '>9 and <=12 months': 'No',
+            '>12 and <=15 months': 'No'
+        }
     
-    total_seconds = int(td.total_seconds())
+    result = {
+        '<=3 months': 'No',
+        '>3 and <=6 months': 'No',
+        '>6 and <=9 months': 'No',
+        '>9 and <=12 months': 'No',
+        '>12 and <=15 months': 'No'
+    }
     
-    if total_seconds == 0:
-        return '0 seconds'
-    
-    is_negative = total_seconds < 0
-    total_seconds = abs(total_seconds)
-    
-    days = total_seconds // 86400
-    hours = (total_seconds % 86400) // 3600
-    minutes = (total_seconds % 3600) // 60
-    seconds = total_seconds % 60
-    
-    parts = []
-    if days > 0:
-        parts.append(f"{days}d")
-    if hours > 0:
-        parts.append(f"{hours}h")
-    if minutes > 0:
-        parts.append(f"{minutes}m")
-    if seconds > 0:
-        parts.append(f"{seconds}s")
-    
-    result = ' '.join(parts)
-    if is_negative:
-        result = '-' + result
+    if months <= 3:
+        result['<=3 months'] = 'Yes'
+    elif months <= 6:
+        result['>3 and <=6 months'] = 'Yes'
+    elif months <= 9:
+        result['>6 and <=9 months'] = 'Yes'
+    elif months <= 12:
+        result['>9 and <=12 months'] = 'Yes'
+    elif months <= 15:
+        result['>12 and <=15 months'] = 'Yes'
     
     return result
-
-def extract_time_components(td):
-    """
-    Extract individual time components from timedelta
-    Returns: (days, hours, minutes, seconds) as integers
-    """
-    if pd.isna(td):
-        return None, None, None, None
-    
-    total_seconds = int(td.total_seconds())
-    is_negative = total_seconds < 0
-    total_seconds = abs(total_seconds)
-    
-    days = total_seconds // 86400
-    months = days // 30
-    hours = (total_seconds % 86400) // 3600
-    minutes = (total_seconds % 3600) // 60
-    seconds = total_seconds % 60
-    
-    # Apply negative sign to days if the difference is negative
-    if is_negative:
-        days = -days if days > 0 else 0
-        if days == 0:
-            hours = -hours if hours > 0 else 0
-            if hours == 0:
-                minutes = -minutes if minutes > 0 else 0
-                if minutes == 0:
-                    seconds = -seconds
-    
-    return int(days), int(hours), int(minutes), int(seconds)
 
 def process_data(input_file, output_file=None):
     """
@@ -113,14 +87,16 @@ def process_data(input_file, output_file=None):
     
     print(f"Reading data from: {input_file}")
     
+    # Check if file exists
+    if not Path(input_file).exists():
+        print(f"❌ Error: File not found - {input_file}")
+        return
+    
     try:
         # Read the Excel file
         df = pd.read_excel(input_file)
         print(f"✅ Successfully read {len(df)} rows")
         
-    except FileNotFoundError:
-        print(f"❌ Error: File not found - {input_file}")
-        return
     except Exception as e:
         print(f"❌ Error reading file: {e}")
         return
@@ -128,7 +104,7 @@ def process_data(input_file, output_file=None):
     # Display column names
     print(f"\nColumns found: {list(df.columns)}")
     
-    # Check for required columns (adjust these names based on your actual column names)
+    # Check for required columns
     if 'sys_created_on' not in df.columns or 'due_date' not in df.columns:
         print("\n⚠️  Warning: Expected columns not found!")
         print("Looking for: 'sys_created_on' and 'due_date'")
@@ -141,50 +117,54 @@ def process_data(input_file, output_file=None):
     df['sys_created_on_clean'] = df['sys_created_on'].apply(parse_datetime)
     df['due_date_clean'] = df['due_date'].apply(parse_datetime)
     
+    # Report parsing success rate
+    created_parsed = df['sys_created_on_clean'].notna().sum()
+    due_parsed = df['due_date_clean'].notna().sum()
+    print(f"  sys_created_on: {created_parsed}/{len(df)} successfully parsed ({created_parsed/len(df)*100:.1f}%)")
+    print(f"  due_date: {due_parsed}/{len(df)} successfully parsed ({due_parsed/len(df)*100:.1f}%)")
+    
     # Calculate the difference
     print("Calculating differences...")
     df['difference_timedelta'] = df['due_date_clean'] - df['sys_created_on_clean'] 
     
     # Convert to different units
-    df['difference_seconds'] = df['difference_timedelta'].dt.total_seconds()
-    df['difference_minutes'] = df['difference_seconds'] / 60
-    df['difference_hours'] = df['difference_minutes'] / 60
-    df['difference_days'] = df['difference_hours'] / 24
-    df['difference_months'] = df['difference_days'] / 30
+    df['total_difference_seconds'] = df['difference_timedelta'].dt.total_seconds()
+    df['total_difference_minutes'] = df['total_difference_seconds'] / 60
+    df['total_difference_hours'] = df['total_difference_minutes'] / 60
+    df['total_difference_days'] = df['total_difference_hours'] / 24
+    df['total_difference_months'] = np.floor(df['total_difference_days'] / 30).astype('Int64')
     
-    # Create human-readable format
-    df['difference_formatted'] = df['difference_timedelta'].apply(format_timedelta)
+    # Categorize into month slabs
+    print("Categorizing into month slabs...")
+    month_categories = df['total_difference_months'].apply(categorize_months)
     
-    # Extract individual time components
-    df[['diff_days', 'diff_hours', 'diff_minutes', 'diff_seconds']] = df['difference_timedelta'].apply(
-        lambda x: pd.Series(extract_time_components(x))
-    )
+    # Extract each category into separate columns
+    df['<=3 months'] = month_categories.apply(lambda x: x['<=3 months'])
+    df['>3 and <=6 months'] = month_categories.apply(lambda x: x['>3 and <=6 months'])
+    df['>6 and <=9 months'] = month_categories.apply(lambda x: x['>6 and <=9 months'])
+    df['>9 and <=12 months'] = month_categories.apply(lambda x: x['>9 and <=12 months'])
+    df['>12 and <=15 months'] = month_categories.apply(lambda x: x['>12 and <=15 months'])
     
-    # Create output dataframe with cleaned data
+    # Create output dataframe with only requested columns
     output_df = pd.DataFrame({
-        'sys_created_on_original': df['sys_created_on'],
-        'sys_created_on_clean': df['sys_created_on_clean'],
-        'due_date_original': df['due_date'],
-        'due_date_clean': df['due_date_clean'],
-        'total_difference': df['difference_formatted'],
-        'months': df['difference_months'],
-        'days': df['diff_days'].astype('Int64'),  # Int64 allows NaN values
-        'hours': df['diff_hours'].astype('Int64'),
-        'minutes': df['diff_minutes'].astype('Int64'),
-        'seconds': df['diff_seconds'].astype('Int64'),
-        'total_hours': df['difference_hours'].round(2),
-        'total_minutes': df['difference_minutes'].round(2),
-        'total_seconds': df['difference_seconds'].round(2),
+        'sys_created_on': df['sys_created_on'],
+        'due_date': df['due_date'],
+        'total_difference_minutes': df['total_difference_minutes'].round(2),
+        'total_difference_hours': df['total_difference_hours'].round(2),
+        'total_difference_days': df['total_difference_days'].round(2),
+        'total_difference_seconds': df['total_difference_seconds'].round(2),
+        'total_difference_months': df['total_difference_months'],
+        '<=3 months': df['<=3 months'],
+        '>3 and <=6 months': df['>3 and <=6 months'],
+        '>6 and <=9 months': df['>6 and <=9 months'],
+        '>9 and <=12 months': df['>9 and <=12 months'],
+        '>12 and <=15 months': df['>12 and <=15 months']
     })
     
     # Generate output filename if not provided
     if output_file is None:
-        if input_file.endswith('.xlsx'):
-            output_file = input_file.replace('.xlsx', '_cleaned.xlsx')
-        elif input_file.endswith('.xls'):
-            output_file = input_file.replace('.xls', '_cleaned.xlsx')
-        else:
-            output_file = input_file + '_cleaned.xlsx'
+        input_path = Path(input_file)
+        output_file = input_path.parent / f"{input_path.stem}_cleaned{input_path.suffix}"
     
     # Save to Excel
     try:
@@ -200,18 +180,29 @@ def process_data(input_file, output_file=None):
     print("="*80)
     print(f"Total records: {len(df)}")
     print(f"Records with both dates: {df['difference_timedelta'].notna().sum()}")
-    print(f"Records with missing outage time: {df['due_date_clean'].isna().sum()}")
+    print(f"Records with missing due_date: {df['due_date_clean'].isna().sum()}")
     print(f"Records with parsing errors in sys_created_on: {df['sys_created_on_clean'].isna().sum()}")
     
     # Statistics on differences (only for valid records)
-    valid_diffs = df['difference_hours'].dropna()
+    valid_diffs = df['total_difference_hours'].dropna()
     if len(valid_diffs) > 0:
-        print(f"\n--- Time Difference Statistics (in hours) ---")
-        print(f"Mean: {valid_diffs.mean():.2f} hours")
-        print(f"Median: {valid_diffs.median():.2f} hours")
-        print(f"Min: {valid_diffs.min():.2f} hours")
-        print(f"Max: {valid_diffs.max():.2f} hours")
-        print(f"Std Dev: {valid_diffs.std():.2f} hours")
+        print(f"\n--- Time Difference Statistics ---")
+        print(f"Mean: {valid_diffs.mean():.2f} hours ({valid_diffs.mean()/24:.2f} days)")
+        print(f"Median: {valid_diffs.median():.2f} hours ({valid_diffs.median()/24:.2f} days)")
+        print(f"Min: {valid_diffs.min():.2f} hours ({valid_diffs.min()/24:.2f} days)")
+        print(f"Max: {valid_diffs.max():.2f} hours ({valid_diffs.max()/24:.2f} days)")
+        
+    # Month slab distribution
+    print(f"\n--- Month Slab Distribution ---")
+    for slab in ['<=3 months', '>3 and <=6 months', '>6 and <=9 months', 
+                 '>9 and <=12 months', '>12 and <=15 months']:
+        count = (output_df[slab] == 'Yes').sum()
+        percentage = (count / len(output_df)) * 100
+        print(f"{slab}: {count} records ({percentage:.1f}%)")
+    
+    # Records outside 15 months
+    outside_15 = (df['total_difference_months'] > 15).sum()
+    print(f"\n>15 months: {outside_15} records ({(outside_15/len(df))*100:.1f}%)")
     
     # Show some examples
     print("\n" + "="*80)
@@ -219,33 +210,22 @@ def process_data(input_file, output_file=None):
     print("="*80)
     pd.set_option('display.max_columns', None)
     pd.set_option('display.width', None)
+    pd.set_option('display.max_colwidth', 30)
     print(output_df.head(10).to_string(index=False))
     
-    # Show records with missing outage time
+    # Show distribution by month slabs with examples
     print("\n" + "="*80)
-    print("RECORDS WITH MISSING OUTAGE TIME (First 5)")
+    print("EXAMPLES FROM EACH MONTH SLAB")
     print("="*80)
-    missing_outage = output_df[output_df['due_date_clean'].isna()].head(5)
-    if len(missing_outage) > 0:
-        print(missing_outage.to_string(index=False))
-    else:
-        print("No records with missing outage time")
-    
-    # Show records with largest differences
-    print("\n" + "="*80)
-    print("RECORDS WITH LARGEST TIME DIFFERENCES (Top 5)")
-    print("="*80)
-    largest_diffs = output_df.nlargest(5, 'total_hours')
-    print(largest_diffs[['sys_created_on_original', 'due_date_original', 
-                        'total_difference', 'days', 'hours', 'minutes', 'seconds']].to_string(index=False))
-    
-    # Show records with smallest/negative differences
-    print("\n" + "="*80)
-    print("RECORDS WITH SMALLEST/NEGATIVE TIME DIFFERENCES (Bottom 5)")
-    print("="*80)
-    smallest_diffs = output_df.nsmallest(5, 'total_hours')
-    print(smallest_diffs[['sys_created_on_original', 'due_date_original', 
-                         'total_difference', 'days', 'hours', 'minutes', 'seconds']].to_string(index=False))
+    for slab in ['<=3 months', '>3 and <=6 months', '>6 and <=9 months', 
+                 '>9 and <=12 months', '>12 and <=15 months']:
+        slab_data = output_df[output_df[slab] == 'Yes'].head(2)
+        if len(slab_data) > 0:
+            print(f"\n{slab}:")
+            print(slab_data[['sys_created_on', 'due_date', 'total_difference_days', 
+                            'total_difference_months']].to_string(index=False))
+        else:
+            print(f"\n{slab}: No records found")
     
     print("\n" + "="*80)
     print("✅ PROCESSING COMPLETE!")
@@ -259,26 +239,28 @@ if __name__ == "__main__":
         output_file = sys.argv[2] if len(sys.argv) > 2 else None
         process_data(input_file, output_file)
     else:
-        # Example usage
+        # Display usage information
         print("="*80)
-        print("DATETIME DIFFERENCE CALCULATOR")
+        print("DATETIME DIFFERENCE CALCULATOR WITH MONTH SLABS")
         print("="*80)
         print("\nUsage:")
-        print("  python process_excel_data.py <input_file.xlsx> [output_file.xlsx]")
-        print("\nExample:")
-        print("  python process_excel_data.py my_data.xlsx")
-        print("  python process_excel_data.py my_data.xlsx cleaned_output.xlsx")
+        print("  python script.py <input_file.xlsx> [output_file.xlsx]")
+        print("\nExamples:")
+        print("  python script.py my_data.xlsx")
+        print("  python script.py my_data.xlsx cleaned_output.xlsx")
         print("\nExpected columns in Excel file:")
         print("  - sys_created_on")
         print("  - due_date")
-        print("\nThe script will:")
-        print("  1. Read your Excel file")
-        print("  2. Parse datetime columns (handles multiple formats)")
-        print("  3. Calculate time differences")
-        print("  4. Save cleaned data to a new Excel file")
-        print("  5. Display summary statistics")
+        print("\nOutput columns:")
+        print("  - total_difference_minutes")
+        print("  - total_difference_hours")
+        print("  - total_difference_days")
+        print("  - total_difference_seconds")
+        print("  - total_difference_months (using np.floor)")
+        print("  - <=3 months (Yes/No)")
+        print("  - >3 and <=6 months (Yes/No)")
+        print("  - >6 and <=9 months (Yes/No)")
+        print("  - >9 and <=12 months (Yes/No)")
+        print("  - >12 and <=15 months (Yes/No)")
         print("="*80)
-        
-        # If you want to hardcode a filename for testing, uncomment below:
-        input_file = 'problem_task.xlsx'
-        process_data(input_file)
+        print("\n⚠️  Please provide an input file as a command-line argument.")
