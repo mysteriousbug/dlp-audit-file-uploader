@@ -1,16 +1,30 @@
-if interim isrr is low and volume is <100, final isrr is isrr-1
-if interim isrr is low and data format is hardcopy, then final isrr is isrr-1
-if interim isrr is low and system connectivity is privileged database access, final isrr is isrr+1
+Deliverables	What went well?	What could have been better?
+"1. DLP Audit:
+- Test data creation
+- Streamlit app for file upload/download
+- Automated URL testing
+- FTP server setup and data exfiltration
+- AWS app for file upload/download
+2. TPSA Audit: 
+- Build a Python script to perform data analysis with 99.5% accuracy to identify 103 SLA violations 
+- Build a complex automation for validating the entire population with 70% time reduction, where the 33,400 TPIDs with 160 variables - 
+- Manual Control Mapping: 56 TPSA controls mapped to NIST, ISF, CIS, MCL frameworks
+3. Post Quantum Cryptography Audit: Prepared a technical presentation on Quantum
+4. IPM Audit: Build a Python script to perfom DA for Incident Caused by Change
+5. New GDCE Env Ops Audit - DA for Subnet/IP mapping
+6. My Voice 2025 - Team Lead"	"- Delivered all audit assignments on time and within scope
+- Exceeded quality standards with 99.5% accuracy in TPSA analysis and 99.8% in ISRR calculations
+- Demonstrated professional skepticism by validating automated results against existing data and documenting discrepancies
+- Collaborated effectively with audit team members"	"- Could have requested more frequent check-ins during complex projects to ensure continuous alignment
+- Should have documented lessons learned immediately after each deliverable rather than retrospectively "
+"- Used ML to recognize problematic themes across feedbacks received in the My Voice Survey
+- Developed Python automation scripts for Audit Automation
+- AI-powered mapping tool for framework alignment"	"- Successfully automated a sizable portion of testing tasks
+- Introduced AI/ML capabilities to assigned tasks through control mapping and sentiment analysis tools
+- Created scalable solution that handle 10x data volumes (10,000+ TPIDs vs current 1,437)"	Could have established automated testing pipelines for script validation
+"- Knowledge sharing through Quantum Cryptography workshop to management and team
+- Continuous learning:"		
+"- Technical expertise: Build reputation as ""go-to person"" for Python automation and cloud tools
 
-if interim isrr is moderate and volume is <100, then final isrr is isrr-1
-if interim isrr is moderate and data format is hardcopy, then final isrr is isrr-1
-if interim isrr is moderate and system connectivity is privileged database access, then final isrr is isrr+1
-
-if interim isrr is high and volume <50 then final isrr is isrr-1
-if interim isrr is high and data format is hardcopy then final isrr is isrr-1
-if interim isrr is high and system connectivity is privileged database access then final isrr is isrr+1
-
-if interim isrr is critical and volume <10 then final isrr is isrr-1
-if interim isrr is critical and data format is hardcopy then final isrr is isrr-1
-
-for all other scenarios interim isrr==final isrr
+- Community engagement: Delivered green computing masterclass to African students as a part of Employee Volunteering Activity (external to SC) "	"- Demonstrated use of emerging technologies (quantum cryptography, AI/ML) relevant to banking's future
+- Built trusted relationships with audit leads through reliable delivery and transparent communication"	
