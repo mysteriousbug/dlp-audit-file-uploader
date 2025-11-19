@@ -1,570 +1,578 @@
 """
-Comprehensive IP and Subnet Analysis Script for nfast_rules.xlsx
+MyVoice 2025 Survey - NLP Sentiment Analysis Script
+Analyzes free-text responses using NLP techniques including sentiment analysis,
+theme identification, and visualization.
 
-This script performs the following tasks:
-1. For each row in nfast_rules.xlsx, reads Source IP and Destination IP
-2. For IPs: Looks up in ip.xlsx
-3. For Subnets: Looks up in ipam_subnet.xlsx, then dev_subnet.xlsx, then staging_subnet.xlsx
-4. Creates two new columns with comprehensive mapping information:
-   - Source IP Analysis: {"ip/subnet": {"File Name": "...", "Environment": "...", ...}}
-   - Destination IP Analysis: {"ip/subnet": {"File Name": "...", "Environment": "...", ...}}
-
-Each mapping includes: File Name, Environment, Function, Location, Infra, ITAM ID, ITAM Name
-
-Optimized for performance with large datasets (17,000+ records)
-
-Usage:
-    python analyze_ips.py
-
-Requirements:
-    - pandas
-    - openpyxl
-    - ipaddress (built-in)
-
-Install requirements:
-    pip install pandas openpyxl
+Requirements: Run locally only, input CSV with questions in Column 1 and responses in Column 2
 """
 
 import pandas as pd
-import ast
-import ipaddress
-from datetime import datetime
+import numpy as np
+import spacy
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.decomposition import LatentDirichletAllocation
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+import seaborn as sns
+from collections import Counter
+import warnings
 import os
+import re
 
-# Configuration
-INPUT_FILE = 'nfast_rules.xlsx'  # Base input file
-IP_FILE = 'ip.xlsx'  # IP lookup file
-IPAM_SUBNET_FILE = 'ipam_subnet.xlsx'  # Primary subnet lookup file
-DEV_SUBNET_FILE = 'dev_subnet.xlsx'  # Secondary subnet lookup file
-STAGING_SUBNET_FILE = 'staging_subnet.xlsx'  # Tertiary subnet lookup file
-ITAM_FILE = 'itam.xlsx'  # ITAM to Name mapping file
-OUTPUT_FILE = 'nfast_rules_analyzed.xlsx'  # Output file
+warnings.filterwarnings('ignore')
 
-# Create backup flag
-CREATE_BACKUP = True
+# Set style for visualizations
+sns.set_style("whitegrid")
+plt.rcParams['figure.figsize'] = (12, 8)
 
 
-def parse_list_string(s):
+class MyVoiceNLPAnalyzer:
     """
-    Parse string representation of list into actual list
+    Comprehensive NLP analyzer for MyVoice survey responses
+    """
     
-    Args:
-        s: String representation of a list
+    def __init__(self, csv_file_path):
+        """
+        Initialize the analyzer with CSV file path
         
-    Returns:
-        list: Parsed list or empty list if parsing fails
-    """
-    if pd.isna(s) or s == '':
-        return []
+        Args:
+            csv_file_path (str): Path to CSV file with questions and responses
+        """
+        self.csv_path = csv_file_path
+        self.df = None
+        self.all_responses = []
+        self.processed_responses = []
+        self.nlp = None
+        self.vader = SentimentIntensityAnalyzer()
+        self.vectorizer = None
+        self.tfidf_matrix = None
+        self.clusters = None
+        self.output_dir = "myvoice_analysis_output"
+        
+        # Create output directory
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
     
-    # If it's already a list, return it
-    if isinstance(s, list):
-        return s
+    def load_data(self):
+        """Load and parse CSV data"""
+        print("Loading data from CSV...")
+        self.df = pd.read_csv(self.csv_path)
+        
+        # Assuming Column 0 is questions, Column 1 is responses
+        self.df.columns = ['Question', 'Responses']
+        
+        # Parse responses - assuming each cell contains multiple responses separated by newlines or delimiters
+        all_responses_list = []
+        
+        for idx, row in self.df.iterrows():
+            question = row['Question']
+            responses_text = str(row['Responses'])
+            
+            # Split responses (adjust delimiter based on your data format)
+            # Common delimiters: newline, semicolon, pipe
+            individual_responses = self._split_responses(responses_text)
+            
+            for response in individual_responses:
+                if response.strip():  # Only add non-empty responses
+                    all_responses_list.append({
+                        'question_id': idx + 1,
+                        'question': question,
+                        'response': response.strip()
+                    })
+        
+        self.all_responses = pd.DataFrame(all_responses_list)
+        print(f"Loaded {len(self.all_responses)} total responses from {len(self.df)} questions")
+        
+        return self.all_responses
     
-    try:
-        # Try to evaluate as Python literal
-        result = ast.literal_eval(str(s))
-        if isinstance(result, list):
-            return result
+    def _split_responses(self, text):
+        """Split response text into individual responses"""
+        # Try multiple delimiters
+        if '\n' in text:
+            return text.split('\n')
+        elif ';' in text:
+            return text.split(';')
+        elif '|' in text:
+            return text.split('|')
         else:
-            return [result]
-    except:
-        # If evaluation fails, return empty list
-        return []
-
-
-def is_ip_address(s):
-    """
-    Check if string is a single IP address (not a subnet)
+            # If no delimiter found, treat as single response
+            return [text]
     
-    Args:
-        s: String to check
-        
-    Returns:
-        bool: True if string is an IP address without CIDR notation
-    """
-    try:
-        # Check if it contains '/'
-        if '/' in str(s):
-            return False
-        # Try to parse as IP address
-        ipaddress.ip_address(str(s).strip())
-        return True
-    except:
-        return False
-
-
-def is_subnet(s):
-    """
-    Check if string is a subnet (has CIDR notation)
-    
-    Args:
-        s: String to check
-        
-    Returns:
-        bool: True if string is a subnet with CIDR notation
-    """
-    try:
-        # Must contain '/'
-        if '/' not in str(s):
-            return False
-        # Try to parse as network
-        ipaddress.ip_network(str(s).strip(), strict=False)
-        return True
-    except:
-        return False
-
-
-def build_ip_lookup_dict(ip_df):
-    """
-    Build optimized lookup dictionary from IP DataFrame
-    
-    Args:
-        ip_df: DataFrame containing IP and related columns
-        
-    Returns:
-        dict: Dictionary mapping IP to info tuple
-    """
-    print("  Building IP lookup dictionary...")
-    
-    ip_lookup_dict = {}
-    for _, row in ip_df.iterrows():
-        ip = str(row['ip']).strip()
-        environment = row.get('environment', None) if pd.notna(row.get('environment')) else None
-        function = row.get('function', None) if pd.notna(row.get('function')) else None
-        location = row.get('location', None) if pd.notna(row.get('location')) else None
-        infra = row.get('infra', None) if pd.notna(row.get('infra')) else None
-        itam = row.get('itam', None) if pd.notna(row.get('itam')) else None
-        
-        ip_lookup_dict[ip] = {
-            'file_name': 'ip.xlsx',
-            'environment': environment,
-            'function': function,
-            'location': location,
-            'infra': infra,
-            'itam': itam
-        }
-    
-    print(f"    ✓ IP lookup dictionary built: {len(ip_lookup_dict)} entries")
-    return ip_lookup_dict
-
-
-def build_subnet_lookup_dict(subnet_df, file_name):
-    """
-    Build optimized lookup dictionary from Subnet DataFrame
-    
-    Args:
-        subnet_df: DataFrame containing subnet and related columns
-        file_name: Name of the source file
-        
-    Returns:
-        dict: Dictionary mapping subnet to info tuple
-    """
-    print(f"  Building subnet lookup dictionary from {file_name}...")
-    
-    subnet_lookup_dict = {}
-    for _, row in subnet_df.iterrows():
-        subnet = str(row['subnet']).strip()
-        environment = row.get('environment', None) if pd.notna(row.get('environment')) else None
-        function = row.get('function', None) if pd.notna(row.get('function')) else None
-        location = row.get('location', None) if pd.notna(row.get('location')) else None
-        infra = row.get('infra', None) if pd.notna(row.get('infra')) else None
-        itam = row.get('itam', None) if pd.notna(row.get('itam')) else None
-        
-        subnet_lookup_dict[subnet] = {
-            'file_name': file_name,
-            'environment': environment,
-            'function': function,
-            'location': location,
-            'infra': infra,
-            'itam': itam
-        }
-    
-    print(f"    ✓ Subnet lookup dictionary built: {len(subnet_lookup_dict)} entries")
-    return subnet_lookup_dict
-
-
-def build_itam_name_lookup_dict(itam_df):
-    """
-    Build optimized ITAM to Name lookup dictionary
-    
-    Args:
-        itam_df: DataFrame containing itam and name columns
-        
-    Returns:
-        dict: Dictionary mapping ITAM to Name
-    """
-    print("  Building ITAM name lookup dictionary...")
-    
-    itam_name_dict = {}
-    for _, row in itam_df.iterrows():
-        itam = str(row['itam']).strip()
-        name = row.get('name', None) if pd.notna(row.get('name')) else None
-        if name:
-            itam_name_dict[itam] = str(name).strip()
-    
-    print(f"    ✓ ITAM name lookup dictionary built: {len(itam_name_dict)} entries")
-    return itam_name_dict
-
-
-def lookup_ip_info(ip, ip_lookup_dict, itam_name_dict):
-    """
-    Look up information for a given IP address
-    
-    Args:
-        ip: IP address string
-        ip_lookup_dict: Dictionary with IP lookups
-        itam_name_dict: Dictionary mapping ITAM to Name
-        
-    Returns:
-        dict: Dictionary with all info or None if not found
-    """
-    # Normalize IP (remove any /32 if present)
-    clean_ip = ip.split('/')[0].strip()
-    
-    info = ip_lookup_dict.get(clean_ip)
-    if info:
-        # Add ITAM name if ITAM exists
-        result = info.copy()
-        if result.get('itam'):
-            result['itam_name'] = itam_name_dict.get(str(result['itam']))
-        else:
-            result['itam_name'] = None
-        return result
-    
-    return None
-
-
-def lookup_subnet_info(subnet, subnet_lookup_dicts, itam_name_dict):
-    """
-    Look up information for a given subnet in multiple subnet files
-    
-    Args:
-        subnet: Subnet string (with CIDR notation)
-        subnet_lookup_dicts: List of subnet lookup dictionaries to search
-        itam_name_dict: Dictionary mapping ITAM to Name
-        
-    Returns:
-        dict: Dictionary with all info or None if not found
-    """
-    # Normalize subnet
-    clean_subnet = subnet.strip()
-    
-    # Search in all subnet dictionaries in order
-    for subnet_dict in subnet_lookup_dicts:
-        info = subnet_dict.get(clean_subnet)
-        if info:
-            # Add ITAM name if ITAM exists
-            result = info.copy()
-            if result.get('itam'):
-                result['itam_name'] = itam_name_dict.get(str(result['itam']))
-            else:
-                result['itam_name'] = None
-            return result
-    
-    return None
-
-
-def create_ip_analysis(ip_list, ip_lookup_dict, subnet_lookup_dicts, itam_name_dict):
-    """
-    Create comprehensive analysis mapping for IPs and subnets
-    
-    Args:
-        ip_list: List of IPs and subnets
-        ip_lookup_dict: Dictionary with IP lookups
-        subnet_lookup_dicts: List of subnet lookup dictionaries
-        itam_name_dict: Dictionary mapping ITAM to Name
-        
-    Returns:
-        dict: Dictionary mapping each IP/subnet to its complete info
-    """
-    analysis_map = {}
-    
-    for item in ip_list:
-        item_str = str(item).strip()
-        
-        if not item_str:
-            continue
-        
-        info = None
-        
-        # Check if it's an IP address (no CIDR) or has /32
-        if is_ip_address(item_str) or (is_subnet(item_str) and item_str.endswith('/32')):
-            # Look up in IP file
-            info = lookup_ip_info(item_str, ip_lookup_dict, itam_name_dict)
-        
-        # Check if it's a subnet (has CIDR notation and not /32)
-        elif is_subnet(item_str):
-            # Look up in subnet files
-            info = lookup_subnet_info(item_str, subnet_lookup_dicts, itam_name_dict)
-        
-        # Store the information if found
-        if info:
-            analysis_map[item_str] = {
-                'File Name': info.get('file_name'),
-                'Environment': info.get('environment'),
-                'Function': info.get('function'),
-                'Location': info.get('location'),
-                'Infra': info.get('infra'),
-                'ITAM ID': info.get('itam'),
-                'ITAM Name': info.get('itam_name')
-            }
-    
-    return analysis_map
-
-
-def analyze_ips(input_file, ip_file, ipam_subnet_file, dev_subnet_file, staging_subnet_file, 
-                itam_file, output_file, create_backup=True):
-    """
-    Main function to analyze IPs and subnets
-    
-    Args:
-        input_file: Path to nfast_rules.xlsx
-        ip_file: Path to ip.xlsx
-        ipam_subnet_file: Path to ipam_subnet.xlsx
-        dev_subnet_file: Path to dev_subnet.xlsx
-        staging_subnet_file: Path to staging_subnet.xlsx
-        itam_file: Path to itam.xlsx
-        output_file: Path to output file
-        create_backup: Whether to create a backup of the input file
-    """
-    
-    print("="*80)
-    print("COMPREHENSIVE IP AND SUBNET ANALYSIS SCRIPT")
-    print("="*80)
-    
-    # Check if all input files exist
-    missing_files = []
-    for file, name in [
-        (input_file, "Rules file"),
-        (ip_file, "IP file"),
-        (ipam_subnet_file, "IPAM Subnet file"),
-        (dev_subnet_file, "Dev Subnet file"),
-        (staging_subnet_file, "Staging Subnet file"),
-        (itam_file, "ITAM file")
-    ]:
-        if not os.path.exists(file):
-            missing_files.append(f"{name}: {file}")
-    
-    if missing_files:
-        print("\nERROR: The following files were not found:")
-        for file in missing_files:
-            print(f"  - {file}")
-        print(f"\nCurrent directory: {os.getcwd()}")
-        return
-    
-    print(f"\nInput files:")
-    print(f"  Rules file:          {input_file}")
-    print(f"  IP file:             {ip_file}")
-    print(f"  IPAM Subnet file:    {ipam_subnet_file}")
-    print(f"  Dev Subnet file:     {dev_subnet_file}")
-    print(f"  Staging Subnet file: {staging_subnet_file}")
-    print(f"  ITAM file:           {itam_file}")
-    print(f"\nOutput file: {output_file}")
-    
-    # Create backup if requested
-    if create_backup:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_file = f"{os.path.splitext(input_file)[0]}_backup_{timestamp}.xlsx"
-        print(f"\nCreating backup: {backup_file}")
-        
+    def initialize_nlp(self):
+        """Initialize spaCy model"""
+        print("Initializing spaCy NLP model...")
         try:
-            import shutil
-            shutil.copy2(input_file, backup_file)
-            print(f"✓ Backup created successfully")
-        except Exception as e:
-            print(f"⚠ Warning: Could not create backup - {e}")
+            self.nlp = spacy.load("en_core_web_sm")
+        except OSError:
+            print("Downloading spaCy model...")
+            os.system("python -m spacy download en_core_web_sm")
+            self.nlp = spacy.load("en_core_web_sm")
+        print("NLP model loaded successfully")
     
-    # Read all files
-    print(f"\nReading files...")
-    try:
-        rules_df = pd.read_excel(input_file, engine='openpyxl')
-        print(f"✓ Rules file loaded - {len(rules_df):,} rows")
+    def preprocess_text(self, text):
+        """
+        Preprocess text using spaCy
         
-        ip_df = pd.read_excel(ip_file, engine='openpyxl')
-        print(f"✓ IP file loaded - {len(ip_df):,} IPs")
-        
-        ipam_subnet_df = pd.read_excel(ipam_subnet_file, engine='openpyxl')
-        print(f"✓ IPAM Subnet file loaded - {len(ipam_subnet_df):,} subnets")
-        
-        dev_subnet_df = pd.read_excel(dev_subnet_file, engine='openpyxl')
-        print(f"✓ Dev Subnet file loaded - {len(dev_subnet_df):,} subnets")
-        
-        staging_subnet_df = pd.read_excel(staging_subnet_file, engine='openpyxl')
-        print(f"✓ Staging Subnet file loaded - {len(staging_subnet_df):,} subnets")
-        
-        itam_df = pd.read_excel(itam_file, engine='openpyxl')
-        print(f"✓ ITAM file loaded - {len(itam_df):,} ITAMs")
-    except Exception as e:
-        print(f"ERROR: Failed to read files - {e}")
-        return
-    
-    # Verify required columns in rules file
-    if 'Source IP' not in rules_df.columns or 'Destination IP' not in rules_df.columns:
-        print("\nERROR: 'Source IP' or 'Destination IP' column not found in rules file")
-        print(f"Available columns: {list(rules_df.columns)}")
-        return
-    
-    # Build optimized lookup dictionaries
-    print("\nBuilding optimized lookup dictionaries...")
-    ip_lookup_dict = build_ip_lookup_dict(ip_df)
-    
-    ipam_subnet_lookup_dict = build_subnet_lookup_dict(ipam_subnet_df, 'ipam_subnet.xlsx')
-    dev_subnet_lookup_dict = build_subnet_lookup_dict(dev_subnet_df, 'dev_subnet.xlsx')
-    staging_subnet_lookup_dict = build_subnet_lookup_dict(staging_subnet_df, 'staging_subnet.xlsx')
-    
-    # Order matters: search in IPAM first, then Dev, then Staging
-    subnet_lookup_dicts = [ipam_subnet_lookup_dict, dev_subnet_lookup_dict, staging_subnet_lookup_dict]
-    
-    itam_name_dict = build_itam_name_lookup_dict(itam_df)
-    
-    print("\n" + "="*80)
-    print("PROCESSING ROWS AND ANALYZING IPs/SUBNETS...")
-    print("="*80)
-    
-    stats = {
-        'rows_processed': 0,
-        'source_ips_found': 0,
-        'source_subnets_found': 0,
-        'source_total_mapped': 0,
-        'dest_ips_found': 0,
-        'dest_subnets_found': 0,
-        'dest_total_mapped': 0,
-        'source_from_ip_file': 0,
-        'source_from_ipam': 0,
-        'source_from_dev': 0,
-        'source_from_staging': 0,
-        'dest_from_ip_file': 0,
-        'dest_from_ipam': 0,
-        'dest_from_dev': 0,
-        'dest_from_staging': 0
-    }
-    
-    # Create new columns lists
-    source_analysis_list = []
-    dest_analysis_list = []
-    
-    # Process each row - vectorize list parsing for better performance
-    print("\nParsing IP lists from all rows...")
-    source_ip_lists = rules_df['Source IP'].apply(parse_list_string)
-    dest_ip_lists = rules_df['Destination IP'].apply(parse_list_string)
-    print(f"  ✓ Parsed IP lists for {len(rules_df):,} rows")
-    
-    print("\nAnalyzing IPs and subnets...")
-    for idx in range(len(rules_df)):
-        stats['rows_processed'] += 1
-        
-        # Get parsed lists
-        source_ips = source_ip_lists.iloc[idx]
-        dest_ips = dest_ip_lists.iloc[idx]
-        
-        # Create analysis for source
-        source_analysis = create_ip_analysis(source_ips, ip_lookup_dict, subnet_lookup_dicts, itam_name_dict)
-        
-        # Count findings for source
-        for key, val in source_analysis.items():
-            stats['source_total_mapped'] += 1
-            file_name = val.get('File Name', '')
+        Args:
+            text (str): Raw text
             
-            if '/' in key and not key.endswith('/32'):
-                stats['source_subnets_found'] += 1
-                if file_name == 'ipam_subnet.xlsx':
-                    stats['source_from_ipam'] += 1
-                elif file_name == 'dev_subnet.xlsx':
-                    stats['source_from_dev'] += 1
-                elif file_name == 'staging_subnet.xlsx':
-                    stats['source_from_staging'] += 1
-            else:
-                stats['source_ips_found'] += 1
-                if file_name == 'ip.xlsx':
-                    stats['source_from_ip_file'] += 1
+        Returns:
+            str: Preprocessed text
+        """
+        doc = self.nlp(text.lower())
         
-        # Create analysis for destination
-        dest_analysis = create_ip_analysis(dest_ips, ip_lookup_dict, subnet_lookup_dicts, itam_name_dict)
+        # Remove stopwords, punctuation, and lemmatize
+        tokens = [token.lemma_ for token in doc 
+                 if not token.is_stop 
+                 and not token.is_punct 
+                 and not token.is_space
+                 and len(token.text) > 2]
         
-        # Count findings for destination
-        for key, val in dest_analysis.items():
-            stats['dest_total_mapped'] += 1
-            file_name = val.get('File Name', '')
+        return ' '.join(tokens)
+    
+    def perform_sentiment_analysis(self):
+        """Perform VADER sentiment analysis on all responses"""
+        print("Performing sentiment analysis...")
+        
+        sentiments = []
+        for text in self.all_responses['response']:
+            scores = self.vader.polarity_scores(text)
+            sentiments.append({
+                'negative': scores['neg'],
+                'neutral': scores['neu'],
+                'positive': scores['pos'],
+                'compound': scores['compound'],
+                'sentiment': self._classify_sentiment(scores['compound'])
+            })
+        
+        sentiment_df = pd.DataFrame(sentiments)
+        self.all_responses = pd.concat([self.all_responses, sentiment_df], axis=1)
+        
+        print(f"Sentiment analysis complete:")
+        print(f"  Positive: {len(sentiment_df[sentiment_df['sentiment'] == 'Positive'])}")
+        print(f"  Neutral: {len(sentiment_df[sentiment_df['sentiment'] == 'Neutral'])}")
+        print(f"  Negative: {len(sentiment_df[sentiment_df['sentiment'] == 'Negative'])}")
+        
+        return self.all_responses
+    
+    def _classify_sentiment(self, compound_score):
+        """Classify sentiment based on compound score"""
+        if compound_score >= 0.05:
+            return 'Positive'
+        elif compound_score <= -0.05:
+            return 'Negative'
+        else:
+            return 'Neutral'
+    
+    def extract_features(self):
+        """Extract TF-IDF features from preprocessed text"""
+        print("Extracting TF-IDF features...")
+        
+        # Preprocess all responses
+        self.processed_responses = [
+            self.preprocess_text(text) for text in self.all_responses['response']
+        ]
+        
+        # Create TF-IDF vectorizer
+        self.vectorizer = TfidfVectorizer(
+            max_features=100,
+            min_df=2,
+            max_df=0.8,
+            ngram_range=(1, 2)
+        )
+        
+        self.tfidf_matrix = self.vectorizer.fit_transform(self.processed_responses)
+        
+        print(f"Extracted {self.tfidf_matrix.shape[1]} features from {self.tfidf_matrix.shape[0]} responses")
+        
+        return self.tfidf_matrix
+    
+    def identify_themes_kmeans(self, n_clusters=5):
+        """
+        Identify themes using KMeans clustering
+        
+        Args:
+            n_clusters (int): Number of clusters/themes to identify
+        """
+        print(f"Identifying {n_clusters} themes using KMeans clustering...")
+        
+        # Perform KMeans clustering
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+        self.clusters = kmeans.fit_predict(self.tfidf_matrix)
+        
+        # Add cluster labels to dataframe
+        self.all_responses['theme_cluster'] = self.clusters
+        
+        # Get top terms per cluster
+        feature_names = self.vectorizer.get_feature_names_out()
+        cluster_centers = kmeans.cluster_centers_
+        
+        themes = {}
+        for i in range(n_clusters):
+            top_indices = cluster_centers[i].argsort()[-10:][::-1]
+            top_terms = [feature_names[idx] for idx in top_indices]
+            themes[f'Theme {i+1}'] = top_terms
             
-            if '/' in key and not key.endswith('/32'):
-                stats['dest_subnets_found'] += 1
-                if file_name == 'ipam_subnet.xlsx':
-                    stats['dest_from_ipam'] += 1
-                elif file_name == 'dev_subnet.xlsx':
-                    stats['dest_from_dev'] += 1
-                elif file_name == 'staging_subnet.xlsx':
-                    stats['dest_from_staging'] += 1
-            else:
-                stats['dest_ips_found'] += 1
-                if file_name == 'ip.xlsx':
-                    stats['dest_from_ip_file'] += 1
+            print(f"\nTheme {i+1} - Top terms: {', '.join(top_terms[:5])}")
+            print(f"  Number of responses: {len(self.all_responses[self.all_responses['theme_cluster'] == i])}")
         
-        # Store as string representation of dictionary
-        source_analysis_list.append(str(source_analysis) if source_analysis else '{}')
-        dest_analysis_list.append(str(dest_analysis) if dest_analysis else '{}')
+        return themes
+    
+    def perform_lda_topic_modeling(self, n_topics=5):
+        """
+        Perform LDA topic modeling
         
-        # Print progress for every 1000 rows
-        if (idx + 1) % 1000 == 0:
-            print(f"  Processed {idx + 1:,} / {len(rules_df):,} rows ({(idx+1)/len(rules_df)*100:.1f}%)...")
+        Args:
+            n_topics (int): Number of topics to extract
+        """
+        print(f"\nPerforming LDA topic modeling with {n_topics} topics...")
+        
+        lda = LatentDirichletAllocation(
+            n_components=n_topics,
+            random_state=42,
+            max_iter=20
+        )
+        
+        lda_output = lda.fit_transform(self.tfidf_matrix)
+        
+        # Get top words for each topic
+        feature_names = self.vectorizer.get_feature_names_out()
+        topics = {}
+        
+        for topic_idx, topic in enumerate(lda.components_):
+            top_indices = topic.argsort()[-10:][::-1]
+            top_words = [feature_names[i] for i in top_indices]
+            topics[f'Topic {topic_idx + 1}'] = top_words
+            
+            print(f"\nTopic {topic_idx + 1}: {', '.join(top_words[:5])}")
+        
+        # Assign dominant topic to each response
+        dominant_topics = lda_output.argmax(axis=1)
+        self.all_responses['lda_topic'] = dominant_topics
+        
+        return topics, lda_output
     
-    # Add new columns to dataframe
-    rules_df['Source IP Analysis'] = source_analysis_list
-    rules_df['Destination IP Analysis'] = dest_analysis_list
+    def generate_wordcloud(self, cluster_id=None):
+        """
+        Generate word cloud for all responses or specific cluster
+        
+        Args:
+            cluster_id (int): Specific cluster to generate wordcloud for (None for all)
+        """
+        if cluster_id is not None:
+            text_data = ' '.join(
+                self.all_responses[self.all_responses['theme_cluster'] == cluster_id]['response']
+            )
+            title = f'Word Cloud - Theme {cluster_id + 1}'
+            filename = f'wordcloud_theme_{cluster_id + 1}.png'
+        else:
+            text_data = ' '.join(self.all_responses['response'])
+            title = 'Word Cloud - All Responses'
+            filename = 'wordcloud_all.png'
+        
+        wordcloud = WordCloud(
+            width=1200,
+            height=600,
+            background_color='white',
+            colormap='viridis',
+            max_words=100
+        ).generate(text_data)
+        
+        plt.figure(figsize=(15, 8))
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis('off')
+        plt.title(title, fontsize=20, pad=20)
+        plt.tight_layout()
+        
+        output_path = os.path.join(self.output_dir, filename)
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        print(f"Word cloud saved: {output_path}")
+        plt.close()
     
-    print(f"\n✓ All {stats['rows_processed']:,} rows processed")
+    def visualize_sentiment_distribution(self):
+        """Visualize sentiment distribution across responses"""
+        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+        
+        # Overall sentiment distribution
+        sentiment_counts = self.all_responses['sentiment'].value_counts()
+        axes[0, 0].bar(sentiment_counts.index, sentiment_counts.values, 
+                       color=['green', 'gray', 'red'])
+        axes[0, 0].set_title('Overall Sentiment Distribution', fontsize=14, fontweight='bold')
+        axes[0, 0].set_ylabel('Number of Responses')
+        
+        # Sentiment by question
+        sentiment_by_q = self.all_responses.groupby(['question_id', 'sentiment']).size().unstack(fill_value=0)
+        sentiment_by_q.plot(kind='bar', stacked=True, ax=axes[0, 1], 
+                           color=['green', 'gray', 'red'])
+        axes[0, 1].set_title('Sentiment Distribution by Question', fontsize=14, fontweight='bold')
+        axes[0, 1].set_xlabel('Question ID')
+        axes[0, 1].set_ylabel('Number of Responses')
+        axes[0, 1].legend(title='Sentiment')
+        
+        # Compound score distribution
+        axes[1, 0].hist(self.all_responses['compound'], bins=30, color='steelblue', alpha=0.7)
+        axes[1, 0].axvline(x=0, color='red', linestyle='--', linewidth=2)
+        axes[1, 0].set_title('Compound Sentiment Score Distribution', fontsize=14, fontweight='bold')
+        axes[1, 0].set_xlabel('Compound Score')
+        axes[1, 0].set_ylabel('Frequency')
+        
+        # Average sentiment by question
+        avg_sentiment = self.all_responses.groupby('question_id')['compound'].mean().sort_values()
+        colors = ['red' if x < 0 else 'green' for x in avg_sentiment.values]
+        axes[1, 1].barh(range(len(avg_sentiment)), avg_sentiment.values, color=colors)
+        axes[1, 1].set_yticks(range(len(avg_sentiment)))
+        axes[1, 1].set_yticklabels([f'Q{i}' for i in avg_sentiment.index])
+        axes[1, 1].set_title('Average Sentiment Score by Question', fontsize=14, fontweight='bold')
+        axes[1, 1].set_xlabel('Average Compound Score')
+        axes[1, 1].axvline(x=0, color='black', linestyle='--', linewidth=1)
+        
+        plt.tight_layout()
+        output_path = os.path.join(self.output_dir, 'sentiment_analysis.png')
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        print(f"Sentiment visualization saved: {output_path}")
+        plt.close()
     
-    # Save to Excel
-    print(f"\nSaving results to: {output_file}...")
-    try:
-        rules_df.to_excel(output_file, index=False, engine='openpyxl')
-        print(f"✓ File saved successfully")
-    except Exception as e:
-        print(f"ERROR: Failed to save file - {e}")
+    def visualize_themes(self):
+        """Visualize theme distribution"""
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+        
+        # Theme distribution
+        theme_counts = self.all_responses['theme_cluster'].value_counts().sort_index()
+        axes[0].bar([f'Theme {i+1}' for i in theme_counts.index], theme_counts.values, 
+                   color='steelblue', alpha=0.7)
+        axes[0].set_title('Theme Distribution (KMeans Clustering)', fontsize=14, fontweight='bold')
+        axes[0].set_ylabel('Number of Responses')
+        axes[0].tick_params(axis='x', rotation=45)
+        
+        # Sentiment by theme
+        sentiment_by_theme = self.all_responses.groupby(['theme_cluster', 'sentiment']).size().unstack(fill_value=0)
+        sentiment_by_theme.index = [f'Theme {i+1}' for i in sentiment_by_theme.index]
+        sentiment_by_theme.plot(kind='bar', stacked=True, ax=axes[1], 
+                               color=['green', 'gray', 'red'])
+        axes[1].set_title('Sentiment Distribution by Theme', fontsize=14, fontweight='bold')
+        axes[1].set_xlabel('Theme')
+        axes[1].set_ylabel('Number of Responses')
+        axes[1].legend(title='Sentiment')
+        axes[1].tick_params(axis='x', rotation=45)
+        
+        plt.tight_layout()
+        output_path = os.path.join(self.output_dir, 'theme_analysis.png')
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        print(f"Theme visualization saved: {output_path}")
+        plt.close()
+    
+    def generate_insights_report(self):
+        """Generate comprehensive insights report"""
+        print("\n" + "="*80)
+        print("MYVOICE 2025 - NLP ANALYSIS INSIGHTS REPORT")
+        print("="*80)
+        
+        report = []
+        
+        # Overall statistics
+        report.append("\n1. OVERALL STATISTICS")
+        report.append("-" * 40)
+        report.append(f"Total Responses Analyzed: {len(self.all_responses)}")
+        report.append(f"Number of Questions: {self.all_responses['question_id'].nunique()}")
+        report.append(f"Average Responses per Question: {len(self.all_responses) / self.all_responses['question_id'].nunique():.1f}")
+        
+        # Sentiment summary
+        report.append("\n2. SENTIMENT ANALYSIS SUMMARY")
+        report.append("-" * 40)
+        sentiment_dist = self.all_responses['sentiment'].value_counts()
+        for sentiment, count in sentiment_dist.items():
+            pct = (count / len(self.all_responses)) * 100
+            report.append(f"{sentiment}: {count} ({pct:.1f}%)")
+        
+        avg_compound = self.all_responses['compound'].mean()
+        report.append(f"\nAverage Compound Sentiment Score: {avg_compound:.3f}")
+        
+        # Most positive and negative questions
+        report.append("\n3. QUESTION-LEVEL INSIGHTS")
+        report.append("-" * 40)
+        avg_by_question = self.all_responses.groupby('question_id')['compound'].mean().sort_values()
+        
+        report.append("\nMost Negative Question:")
+        most_neg_q = avg_by_question.index[0]
+        report.append(f"  Question {most_neg_q}: {self.df.iloc[most_neg_q-1]['Question']}")
+        report.append(f"  Average Score: {avg_by_question.iloc[0]:.3f}")
+        
+        report.append("\nMost Positive Question:")
+        most_pos_q = avg_by_question.index[-1]
+        report.append(f"  Question {most_pos_q}: {self.df.iloc[most_pos_q-1]['Question']}")
+        report.append(f"  Average Score: {avg_by_question.iloc[-1]:.3f}")
+        
+        # Theme analysis
+        report.append("\n4. THEME IDENTIFICATION (KMeans Clustering)")
+        report.append("-" * 40)
+        for theme_id in sorted(self.all_responses['theme_cluster'].unique()):
+            theme_responses = self.all_responses[self.all_responses['theme_cluster'] == theme_id]
+            count = len(theme_responses)
+            pct = (count / len(self.all_responses)) * 100
+            avg_sentiment = theme_responses['compound'].mean()
+            
+            report.append(f"\nTheme {theme_id + 1}:")
+            report.append(f"  Responses: {count} ({pct:.1f}%)")
+            report.append(f"  Average Sentiment: {avg_sentiment:.3f}")
+            report.append(f"  Dominant Sentiment: {theme_responses['sentiment'].mode()[0]}")
+        
+        # Key terms analysis
+        report.append("\n5. MOST FREQUENT TERMS (Across All Responses)")
+        report.append("-" * 40)
+        all_terms = ' '.join(self.processed_responses).split()
+        term_freq = Counter(all_terms).most_common(20)
+        for term, freq in term_freq:
+            report.append(f"  {term}: {freq}")
+        
+        # Critical issues
+        report.append("\n6. CRITICAL ISSUES IDENTIFIED")
+        report.append("-" * 40)
+        negative_responses = self.all_responses[self.all_responses['sentiment'] == 'Negative']
+        
+        # Get most common terms in negative responses
+        negative_processed = [self.preprocess_text(text) for text in negative_responses['response']]
+        negative_terms = ' '.join(negative_processed).split()
+        negative_freq = Counter(negative_terms).most_common(10)
+        
+        report.append("\nTop concerns (from negative responses):")
+        for term, freq in negative_freq:
+            report.append(f"  {term}: mentioned {freq} times")
+        
+        # Sample negative responses
+        report.append("\nSample negative responses:")
+        for idx, row in negative_responses.head(3).iterrows():
+            report.append(f"  - Q{row['question_id']}: {row['response'][:100]}...")
+        
+        # Recommendations
+        report.append("\n7. RECOMMENDATIONS")
+        report.append("-" * 40)
+        report.append("Based on the analysis:")
+        
+        # Identify themes with most negative sentiment
+        theme_sentiment = self.all_responses.groupby('theme_cluster')['compound'].mean().sort_values()
+        worst_theme = theme_sentiment.index[0]
+        
+        report.append(f"  • Priority Focus: Theme {worst_theme + 1} (most negative sentiment)")
+        report.append(f"  • Questions needing attention: Question {most_neg_q}")
+        
+        if avg_compound < -0.05:
+            report.append("  • URGENT: Overall sentiment is negative - immediate action required")
+        elif avg_compound < 0.2:
+            report.append("  • CAUTION: Overall sentiment is neutral - monitoring and improvement needed")
+        else:
+            report.append("  • POSITIVE: Overall sentiment is good - maintain current practices")
+        
+        report.append("\n" + "="*80)
+        
+        # Print and save report
+        report_text = '\n'.join(report)
+        print(report_text)
+        
+        output_path = os.path.join(self.output_dir, 'insights_report.txt')
+        with open(output_path, 'w') as f:
+            f.write(report_text)
+        print(f"\nReport saved: {output_path}")
+        
+        return report_text
+    
+    def export_results(self):
+        """Export analyzed data to CSV"""
+        output_path = os.path.join(self.output_dir, 'analyzed_responses.csv')
+        self.all_responses.to_csv(output_path, index=False)
+        print(f"Analyzed data exported: {output_path}")
+        
+        # Export summary by question
+        summary_by_q = self.all_responses.groupby('question_id').agg({
+            'compound': ['mean', 'std'],
+            'sentiment': lambda x: x.value_counts().to_dict(),
+            'theme_cluster': lambda x: x.mode()[0] if len(x) > 0 else None
+        }).round(3)
+        
+        summary_output = os.path.join(self.output_dir, 'question_summary.csv')
+        summary_by_q.to_csv(summary_output)
+        print(f"Question summary exported: {summary_output}")
+    
+    def run_full_analysis(self, n_clusters=5, n_topics=5):
+        """
+        Run complete NLP analysis pipeline
+        
+        Args:
+            n_clusters (int): Number of clusters for KMeans
+            n_topics (int): Number of topics for LDA
+        """
+        print("\n" + "="*80)
+        print("STARTING MYVOICE 2025 NLP ANALYSIS PIPELINE")
+        print("="*80 + "\n")
+        
+        # Step 1: Load data
+        self.load_data()
+        
+        # Step 2: Initialize NLP
+        self.initialize_nlp()
+        
+        # Step 3: Sentiment analysis
+        self.perform_sentiment_analysis()
+        
+        # Step 4: Feature extraction
+        self.extract_features()
+        
+        # Step 5: Theme identification
+        self.identify_themes_kmeans(n_clusters=n_clusters)
+        
+        # Step 6: Topic modeling
+        self.perform_lda_topic_modeling(n_topics=n_topics)
+        
+        # Step 7: Visualizations
+        print("\nGenerating visualizations...")
+        self.visualize_sentiment_distribution()
+        self.visualize_themes()
+        
+        # Generate word clouds
+        print("\nGenerating word clouds...")
+        self.generate_wordcloud()  # All responses
+        for i in range(n_clusters):
+            self.generate_wordcloud(cluster_id=i)  # Each theme
+        
+        # Step 8: Generate insights report
+        self.generate_insights_report()
+        
+        # Step 9: Export results
+        self.export_results()
+        
+        print("\n" + "="*80)
+        print("ANALYSIS COMPLETE!")
+        print(f"All outputs saved to: {self.output_dir}/")
+        print("="*80)
+
+
+def main():
+    """Main execution function"""
+    # File path to your CSV
+    csv_file = "myvoice_responses.csv"  # Change this to your file path
+    
+    # Check if file exists
+    if not os.path.exists(csv_file):
+        print(f"ERROR: File '{csv_file}' not found!")
+        print("Please ensure the CSV file is in the same directory as this script.")
+        print("\nExpected CSV format:")
+        print("Column 1: Question text")
+        print("Column 2: Responses (multiple responses separated by newlines or semicolons)")
         return
     
-    # Print summary
-    print("\n" + "="*80)
-    print("SUMMARY:")
-    print("="*80)
-    print(f"  Rows processed:                      {stats['rows_processed']:,}")
-    print(f"\n  SOURCE IP/SUBNET ANALYSIS:")
-    print(f"    Total mapped:                      {stats['source_total_mapped']:,}")
-    print(f"    IPs found:                         {stats['source_ips_found']:,}")
-    print(f"      - From ip.xlsx:                  {stats['source_from_ip_file']:,}")
-    print(f"    Subnets found:                     {stats['source_subnets_found']:,}")
-    print(f"      - From ipam_subnet.xlsx:         {stats['source_from_ipam']:,}")
-    print(f"      - From dev_subnet.xlsx:          {stats['source_from_dev']:,}")
-    print(f"      - From staging_subnet.xlsx:      {stats['source_from_staging']:,}")
-    print(f"\n  DESTINATION IP/SUBNET ANALYSIS:")
-    print(f"    Total mapped:                      {stats['dest_total_mapped']:,}")
-    print(f"    IPs found:                         {stats['dest_ips_found']:,}")
-    print(f"      - From ip.xlsx:                  {stats['dest_from_ip_file']:,}")
-    print(f"    Subnets found:                     {stats['dest_subnets_found']:,}")
-    print(f"      - From ipam_subnet.xlsx:         {stats['dest_from_ipam']:,}")
-    print(f"      - From dev_subnet.xlsx:          {stats['dest_from_dev']:,}")
-    print(f"      - From staging_subnet.xlsx:      {stats['dest_from_staging']:,}")
-    print("\n✓ IP and Subnet analysis completed successfully!")
-    print(f"\nNew columns added:")
-    print(f"  - Source IP Analysis")
-    print(f"  - Destination IP Analysis")
-    print("\nAll original columns have been preserved.")
-    print("="*80)
+    # Initialize analyzer
+    analyzer = MyVoiceNLPAnalyzer(csv_file)
+    
+    # Run full analysis
+    analyzer.run_full_analysis(
+        n_clusters=5,  # Number of themes to identify
+        n_topics=5     # Number of LDA topics
+    )
+    
+    print("\n✓ Analysis pipeline completed successfully!")
+    print(f"✓ Check '{analyzer.output_dir}' folder for all results")
 
 
 if __name__ == "__main__":
-    # Check if required libraries are installed
-    try:
-        import pandas
-        import openpyxl
-        import ipaddress
-    except ImportError as e:
-        print("ERROR: Required library not found!")
-        print("\nPlease install required libraries:")
-        print("  pip install pandas openpyxl")
-        print(f"\nMissing: {e}")
-        exit(1)
-    
-    # Run the analysis process
-    analyze_ips(INPUT_FILE, IP_FILE, IPAM_SUBNET_FILE, DEV_SUBNET_FILE, 
-                STAGING_SUBNET_FILE, ITAM_FILE, OUTPUT_FILE, CREATE_BACKUP)
+    main()
