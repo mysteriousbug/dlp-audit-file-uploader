@@ -1,71 +1,85 @@
-database assignment groups
-
-
-just to give you the latest update: we have finished all the interviews (100%).
-my colleague is doing the intro, team details, demographics, questionnaire and theme approach slide. i dont have to worry about that.
-i am doing the interview results and action items slide (2 slides). i have put my slide contents here:
-
-slide 1: interview responses
-
-1. experience of working with the bank
-2. work environment
-3. future readiness
-4. growth and promotion
-5. people leader
-
-under each section i have listed the positives and negatives. i liked the 'Now we get to the substance. What are we actually hearing? Remember, this is based on 74 conversations, so these are preliminary themes, but they're already very clear and consistent.
-
-Let me start with the positives - the strengths we need to sustain.
-
-Our inclusive culture is strong. 85% of responses about culture were positive. People describe leaders as approachable, feel safe voicing opinions and admitting mistakes. Multiple people said "good culture" is why they stay. This is huge. Culture is hard to build and easy to destroy. We need to protect this.
-
-Flexibility also scores well at 75% positive. The hybrid work arrangements are valued. People appreciate that we trust them to manage their schedules. However - and here's the first warning sign - this flexibility is increasingly insufficient to balance the workload. It's masking an underlying problem.
-
-Now the areas requiring attention. Work-life balance is getting mixed feedback. It's manageable for most, but fatigue is increasing. Burnout is creeping up, especially during audit planning and reporting periods. We need better workload distribution.
-
-Team connection is interesting - 94% feel connected, which is good. But there's a desire for more. More face-to-face engagement, more follow-through on feedback. Some people mentioned feeling disconnected with the Gravity structure changes.
-
-Now the critical concerns. These two showed up in 100% of conversations. Every single person raised these issues.
-
-Workload and planning. Heavy workload, back-to-back audits with no breathing room. A clash between Country and Group audits putting people in the middle. Limited downtime. And here's the technical piece - insufficient auditor days allocated for detailed audit work. People are being asked to do comprehensive audits without adequate time allocation.
-
-Career progression. People feel stagnant. Their workload has increased but progression opportunities haven't. There's insufficient recognition for effort. Evaluation criteria are perceived as inconsistent across People Leaders. And there's a desire for clearer expectations and coaching.
-
-Look at those percentages at the bottom. These aren't representing positive sentiment - they represent how many people raised each concern. 100% on workload and career means everyone is talking about these issues.
-
-This slide should make us uncomfortable. It should create urgency. Because good culture and flexibility aren't enough if people are burning out and feel their careers are stuck.
-'. retain this.
-
-slide 2: suggested actions and ideas
-
-1. experience of working with the bank
-Audit scheduling to avoid overlapping bookings and consider recovery time between bookings
-Strengthen onboarding and resource planning for new joiners
-Standardize methodology and clarify Country vs Group ownership to reduce duplication
-
-2. work environment
-Reinforce psychological safety; eliminate blame and defensive reactions
-Increase informal team interactions and cross-location connection (team lunch meeting place holders are sent out every month - nobody ever follows through)
-Recognize teamwork and collaboration; not only output quantity
-Include downtime after heavy cycles
-
-3. future readiness
-Protect dedicated learning time in audit calendar
-Build structured capability building pathways for AI, data and domain skills
-Focus training on audit-relevant use cases and link to development plans
-
-4. growth and promotion
-Publish transparent and standardized promotion/evaluation criteria
-Schedule formal career-development discussions frequently
-Introduce mentorship and targeted domain-expertise refresh programs
-
-5. people leader
-Empower PLs to manage workload and resource constraints
-Create trackers for feedback outcomes and actions taken
-Require monthly 1:1s focused on well-being and development
-Foster the culture of coaching and accountability instead of blame
-Standardize feedback quality across PLs
-
-
-for my content, i want a script in text. i dont want to read out the ppt as is. keep the funny bits like diagnosis and prescription like you gave in your previous response.
-
+SLIDE 1: INTERVIEW RESPONSES - SPEAKING SCRIPT
+[Transition from colleague's intro]
+Thank you [colleague's name]. So let me pick up from here with what you're all waiting for - what did people actually say?
+Now we get to the substance. And I'm pleased to tell you we've completed all 116 interviews - 100% participation. Every voice was heard. So what I'm sharing today isn't preliminary or partial. This is the full picture.
+Let me be upfront about how I'm going to present this. I'm going to walk through each of the five themes, and for each one, I'll share the positives first - what's working well that we need to sustain - and then the concerns. Some of this will be uncomfortable. It should be. Because our people are telling us they need help.
+[THEME 1: EXPERIENCE OF WORKING WITH THE BANK]
+Let's start with your experience working here at the bank and with GIAI.
+On the positive side, there's genuine pride in working for SCB. People value the quality of their colleagues, the collaborative environment, and the meaningfulness of the work. Multiple people said "I'm proud to tell people I work here." That's huge. You can't manufacture that kind of pride - it comes from believing in what you're doing.
+The concerns? Career pathways need more clarity. People want to know what their next step looks like and how to get there. There's also a desire for more recognition of day-to-day contributions, not just the big-ticket projects. And some mentioned wanting to be more involved in strategic discussions - not just executing, but helping shape direction.
+[THEME 2: WORK ENVIRONMENT]
+Work environment is where things get really interesting - and by interesting, I mean complicated.
+The positives are real and significant. Our inclusive culture is strong. Leaders are described as approachable. People feel safe voicing opinions and admitting mistakes. Multiple people said "good culture is why I stay." This is genuinely rare. Culture is incredibly hard to build and incredibly easy to destroy. We need to protect this like our lives depend on it - because in many ways, our success does.
+Flexibility also scores well. The hybrid work arrangements are valued. People appreciate that we trust them to manage their schedules.
+However - and here's the first warning sign - this flexibility is increasingly insufficient to balance the workload. It's masking an underlying problem. People are essentially saying "I appreciate I can work from home, but I'm still drowning."
+Now the areas requiring urgent attention.
+Workload. This showed up in virtually every single conversation. Heavy workload, back-to-back audits with no breathing room. A clash between Country and Group audits putting people right in the middle with conflicting expectations. Limited downtime. And here's the technical piece that matters - insufficient auditor days allocated for detailed audit work. People are being asked to do comprehensive audits without adequate time allocation. Then they're told the audit wasn't deep enough. You can see the problem.
+Work-life balance is getting mixed feedback. It's manageable for some, but fatigue is increasing across the board. Burnout is creeping up, especially during audit planning and reporting periods. And here's what should concern us - people are feeling guilty about taking leave because they know the work will pile up or someone else will have to cover.
+Let me share a quote that stuck with me: "My family keeps asking when I'll be less busy. I don't know what to tell them anymore." Think about that for a moment.
+[THEME 3: FUTURE READINESS]
+Future readiness, particularly around AI and technology. This one revealed something important.
+The positive? There's genuine curiosity. People want to understand AI and see its potential. That's good - curiosity is the foundation for learning.
+But the concerns outweigh the positives here. There's significant anxiety about job security and skill relevance. People are worried about being left behind. One person said, and I'm paraphrasing, "Show us how AI makes our jobs better, not why we're replaceable." That's the conversation we need to have.
+There's also frustration that AI is being implemented without adequate training or clear communication about impact. Change is being done TO people, not WITH people. That creates fear instead of excitement. We need to flip that.
+[THEME 4: GROWTH AND PROMOTION]
+Growth and promotion. This is where we see the most frustration.
+On the positive side, where training is available, people generally find it decent quality. That's something to build on.
+But here are the issues. People feel their careers are stagnant. Their workload has increased but progression opportunities haven't kept pace. Evaluation criteria are perceived as inconsistent across People Leaders - what gets you promoted in one team might not in another. Recognition is insufficient. And here's the kicker - there's no protected time for learning during work hours. So we're telling people to develop themselves while simultaneously piling on work that leaves no time to actually do it.
+One person said: "My workload has doubled in two years, but my title and pay haven't changed. What's my path forward?" We need to have an answer to that question.
+[THEME 5: PEOPLE LEADER]
+Finally, People Leader engagement.
+The positive: leaders are generally viewed as approachable. People don't feel their managers are unapproachable or difficult. That's a good foundation.
+The concerns are about frequency and quality of engagement. People want more regular, meaningful check-ins. More clarity on expectations. Better coaching on priorities and workload. More follow-through on feedback - not just asking for input, but showing what happened with it.
+Communication is too infrequent and when it happens, it's often rushed and transactional rather than developmental. People don't feel comfortable sharing personal matters because past experiences showed them it might be used against them or they'll be seen as "not coping."
+One person described it as: "My PL asks 'how are you?' but doesn't really want an honest answer."
+[OVERALL MESSAGE]
+So let me synthesize what we're hearing across all five themes.
+We have a really strong foundation. Good culture, meaningful work, quality people, genuine pride. Those are the pillars.
+But - and this is the critical but - operational pressures are overwhelming the positives. Workload is unsustainable. Career progression is unclear. Work-life balance is deteriorating. And we're creating anxiety instead of excitement about the future.
+Here's what should make us uncomfortable: Good culture and flexibility aren't enough if people are burning out and feel their careers are stuck. You can't culture your way out of a workload crisis. You can't flexibility your way out of insufficient auditor days.
+This slide should create urgency. Because we have engaged, committed people who want to succeed here. They're not disengaged or checked out - they're asking for help. That's very different. And it means if we act now, we can turn this around.
+But the window is closing.
+[Pause, then transition]
+So... what are we going to do about it? That's what the next slide is about.
+SLIDE 2: SUGGESTED ACTIONS AND IDEAS - SPEAKING SCRIPT
+[Opening]
+Okay. So that was the diagnosis. Now here's the prescription.
+And I want you to notice something about this slide. These aren't vague commitments like "we'll work on workload" or "we'll improve communication." These are specific, actionable ideas organized by the same five themes. Some we can implement quickly. Some will take longer. But all of them are concrete.
+Let me walk through each theme.
+[THEME 1: EXPERIENCE OF WORKING WITH THE BANK]
+Experience of working with the bank and GIAI.
+First, audit scheduling. We need to avoid overlapping bookings and actually build in recovery time between major audits. Right now people are going from one intense audit straight into another with no breathing room. That's not sustainable and frankly, it's not smart. Quality suffers when people are exhausted.
+Second, strengthen onboarding and resource planning for new joiners. We can't keep throwing people into the deep end and expecting them to swim. Proper onboarding isn't just nice to have - it's essential for setting people up for success.
+Third, standardize methodology and clarify Country versus Group ownership to reduce duplication. Right now people are caught in the middle of conflicting expectations. We need to be crystal clear about who owns what, so auditors aren't getting squeezed between competing demands.
+[THEME 2: WORK ENVIRONMENT]
+Work environment.
+First, reinforce psychological safety. Eliminate blame and defensive reactions. This is critical. If people don't feel safe admitting mistakes or asking for help, problems get hidden until they become crises. We need a culture where it's safe to say "I don't know" or "I messed up."
+Second, increase informal team interactions and cross-location connections. Now I have to call something out here - we send out team lunch meeting placeholders every month. Nobody ever follows through. We all see the invite, think "that would be nice," and then ignore it. That has to change. If we're going to send the invite, let's actually show up. Otherwise we're just creating calendar clutter and cynicism.
+Third, recognize teamwork and collaboration, not only output quantity. Right now it feels like recognition goes to whoever produces the most, regardless of how they do it or who they step on. We need to value how work gets done, not just that it gets done.
+Fourth, include downtime after heavy cycles. This ties back to scheduling. If you just completed a massive audit during planning season, you need recovery time before the next one. This isn't weakness - it's basic human sustainability.
+[THEME 3: FUTURE READINESS]
+Future readiness, particularly around AI.
+First, protect dedicated learning time in the audit calendar. And I mean actually protect it. Not "we encourage learning" while simultaneously making it impossible to attend training. Block the time. Respect the time. Make it non-negotiable.
+Second, build structured capability building pathways for AI, data, and domain skills. People need to see a clear path from "I don't understand AI" to "I can effectively use AI in my work." That requires structure, not just throwing a bunch of courses at people and hoping something sticks.
+Third, focus training on audit-relevant use cases and link to development plans. People don't need theoretical AI training. They need to understand: How does this affect my actual audit work? What tools will I use? How do I get good at them? Make it practical and relevant.
+[THEME 4: GROWTH AND PROMOTION]
+Growth and promotion. This is where we need to be really clear and really consistent.
+First, publish transparent and standardized promotion and evaluation criteria. Write it down. Make it public. Everyone should know exactly what "good" looks like at their level and what they need to do to progress. No more guessing. No more inconsistency across People Leaders.
+Second, schedule formal career development discussions frequently. Not once a year during performance review season. Regularly. Quarterly at minimum. Make career conversations a normal part of the rhythm, not a special event.
+Third, introduce mentorship and targeted domain-expertise refresh programs. People need access to experienced colleagues who can guide them. And for those who've been here a while, refreshers on emerging areas keep skills current.
+[THEME 5: PEOPLE LEADER]
+People Leader engagement.
+First, empower PLs to manage workload and resource constraints. Don't just tell People Leaders "support your team's work-life balance" while simultaneously making it impossible because of resource constraints. Give them actual authority to push back on unrealistic demands and redistribute work.
+Second, create trackers for feedback outcomes and actions taken. When someone raises an issue in a one-on-one, track what happens. Did we address it? Is it still open? What's the status? This creates accountability and shows people their feedback matters.
+Third, require monthly one-on-ones focused on wellbeing and development. Not just project status updates. Real conversations about how people are doing, what support they need, where they want to grow. Make this a requirement, not a suggestion.
+Fourth, foster a culture of coaching and accountability instead of blame. When things go wrong, the question should be "what can we learn?" not "who do we blame?" Coaching develops people. Blame just makes them defensive and secretive.
+Fifth, standardize feedback quality across PLs. Everyone should be getting regular, specific, actionable feedback. Not vague statements like "you need to improve" but concrete, helpful guidance on what good looks like and how to get there.
+[CLOSING]
+Now, I want to be really clear about something. This slide shows ideas and suggested actions. Some will be quick wins we can implement immediately. Others require more planning and resources. And some might need adjustment based on practical realities.
+But here's what's non-negotiable: we have to act. We can't present these findings, nod sympathetically, and then go back to business as usual. That would be the fastest way to destroy the trust and engagement we still have.
+So what happens next? Leadership takes these suggestions, determines priorities, assigns owners, sets timelines, and commits to specific actions. Then we communicate those commitments back to you - clearly, specifically, with names and dates attached. And then we track progress transparently.
+This isn't the end of the conversation. It's the beginning of ongoing dialogue and action.
+The message we heard loud and clear from 116 interviews is this: people want to succeed here. They believe in the work. They value their colleagues. But they need conditions that make success sustainable. That's what these actions are about - creating those conditions.
+The good news? We still have engaged people who care. The foundation is strong. But we need to act on these operational and systemic issues before we lose that engagement.
+We have a window to turn this around. Let's not waste it.
+[Pause]
