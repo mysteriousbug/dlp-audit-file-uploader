@@ -1,203 +1,24 @@
-"""
-Extract DEV/STAGE IPs from analyze_ips.py output
+these are the columns in my incident population:Index(['number', 'active', 'opened_at', 'short_description', 'caller_id',
+       'caller_id.user_name', 'caller_id.location', 'priority', 'state',
+       'category', 'subcategory', 'assignment_group', 'assigned_to',
+       'sys_updated_on', 'sys_updated_by', 'u_time_to_detect', 'description',
+       'business_stc', 'sys_created_on', 'resolved_at', 'closed_at',
+       'u_service_offering_outage_start_time',
+       'u_service_offering_outage_end_time', 'problem_id', 'u_final_impact',
+       'major_incident_state', 'promoted_on', 'business_impact', 'u_country',
+       'business_duration', 'urgency', 'u_external_client_impact',
+       'sys_domain', 'reassignment_count', 'work_notes', 'child_incidents',
+       'approval', 'u_situation_manager', 'u_rca_managed_by', 'reopen_count',
+       'business_service', 'service_offering', 'contact_type',
+       'u_time_to_respond', 'impact', 'u_affected_country', 'caused_by'],
+      dtype='object').
 
-Input columns:
-- Source IP/Subnet (has nested dict with File Name, Environment, Function, etc.)
-- Destination IP/Subnet (has nested dict with File Name, Environment, Function, etc.)
+i need to perform this test:
+Duplicate Incident Detection:
+Objective: To ensure accuracy, efficiency, and integrity of incident management data.
+Scenario Testing: to identify any same or similar incident logged by different users or logged within a short time window.
 
-Output columns:
-- Source IP / Subnet - STG and/or DEV: {"ip":"DEV", "subnet":"STAGE"}
-- Destination IP / Subnet - STG and/or DEV: {"ip":"STAGE"}
-
-Usage:
-    python extract_dev_stage_from_analysis.py
-"""
-
-import pandas as pd
-import ast
-from datetime import datetime
-import os
-
-# Configuration
-INPUT_FILE = 'nfast_rules_analyzed.xlsx'  # Output from analyze_ips.py
-OUTPUT_FILE = 'nfast_rules_with_dev_stage.xlsx'
-CREATE_BACKUP = True
+can you write the code for it?
 
 
-def parse_dict_string(s):
-    """Parse string representation of dictionary"""
-    if pd.isna(s) or s == '' or s == '{}':
-        return {}
-    
-    if isinstance(s, dict):
-        return s
-    
-    try:
-        result = ast.literal_eval(str(s))
-        if isinstance(result, dict):
-            return result
-        else:
-            return {}
-    except:
-        return {}
 
-
-def extract_dev_stage(analysis_dict):
-    """
-    Extract IPs/subnets that have DEV or STAGE environment
-    
-    Args:
-        analysis_dict: Nested dict like {
-            "10.1.1.1": {"File Name": "...", "Environment": "DEV", ...},
-            "10.2.2.2": {"File Name": "...", "Environment": "PRD", ...}
-        }
-        
-    Returns:
-        dict: Simple dict like {"10.1.1.1": "DEV"}
-    """
-    dev_stage_dict = {}
-    
-    for ip_subnet, details in analysis_dict.items():
-        if isinstance(details, dict):
-            environment = details.get('Environment')
-            if environment and str(environment).upper() in ['DEV', 'STAGE', 'STAGING', 'STG']:
-                dev_stage_dict[ip_subnet] = environment
-    
-    return dev_stage_dict
-
-
-def main(input_file, output_file, create_backup=True):
-    
-    print("="*80)
-    print("EXTRACT DEV/STAGE IPs FROM ANALYSIS OUTPUT")
-    print("="*80)
-    
-    if not os.path.exists(input_file):
-        print(f"\nERROR: Input file '{input_file}' not found!")
-        print(f"Current directory: {os.getcwd()}")
-        return
-    
-    print(f"\nInput file:  {input_file}")
-    print(f"Output file: {output_file}")
-    
-    # Create backup
-    if create_backup:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_file = f"{os.path.splitext(input_file)[0]}_backup_{timestamp}.xlsx"
-        print(f"Creating backup: {backup_file}")
-        
-        try:
-            import shutil
-            shutil.copy2(input_file, backup_file)
-            print(f"✓ Backup created")
-        except Exception as e:
-            print(f"⚠ Warning: Could not create backup - {e}")
-    
-    # Read file
-    print(f"\nReading file...")
-    try:
-        df = pd.read_excel(input_file, engine='openpyxl')
-        print(f"✓ File loaded - {len(df):,} rows")
-    except Exception as e:
-        print(f"ERROR: Failed to read file - {e}")
-        return
-    
-    # Find the correct column names (they might have different exact names)
-    source_col = None
-    dest_col = None
-    
-    for col in df.columns:
-        if 'Source IP' in col and 'Analysis' in col:
-            source_col = col
-        elif 'Destination IP' in col and 'Analysis' in col:
-            dest_col = col
-    
-    if not source_col or not dest_col:
-        print("\nERROR: Could not find Source/Destination IP Analysis columns")
-        print(f"Available columns: {list(df.columns)}")
-        return
-    
-    print(f"\nUsing columns:")
-    print(f"  Source: {source_col}")
-    print(f"  Destination: {dest_col}")
-    
-    print("\n" + "="*80)
-    print("EXTRACTING DEV/STAGE IPs...")
-    print("="*80)
-    
-    stats = {
-        'rows_processed': 0,
-        'source_dev_stage_found': 0,
-        'dest_dev_stage_found': 0
-    }
-    
-    source_dev_stage_list = []
-    dest_dev_stage_list = []
-    
-    print("\nParsing dictionaries...")
-    source_dicts = df[source_col].apply(parse_dict_string)
-    dest_dicts = df[dest_col].apply(parse_dict_string)
-    print(f"  ✓ Parsed {len(df):,} rows")
-    
-    print("\nExtracting DEV/STAGE IPs...")
-    for idx in range(len(df)):
-        stats['rows_processed'] += 1
-        
-        source_dict = source_dicts.iloc[idx]
-        dest_dict = dest_dicts.iloc[idx]
-        
-        # Extract DEV/STAGE
-        source_dev_stage = extract_dev_stage(source_dict)
-        dest_dev_stage = extract_dev_stage(dest_dict)
-        
-        if source_dev_stage:
-            stats['source_dev_stage_found'] += 1
-        if dest_dev_stage:
-            stats['dest_dev_stage_found'] += 1
-        
-        source_dev_stage_list.append(str(source_dev_stage) if source_dev_stage else '{}')
-        dest_dev_stage_list.append(str(dest_dev_stage) if dest_dev_stage else '{}')
-        
-        if (idx + 1) % 1000 == 0:
-            print(f"  Processed {idx + 1:,} / {len(df):,} rows ({(idx+1)/len(df)*100:.1f}%)...")
-    
-    # Add new columns
-    df['Source IP / Subnet - STG and/or DEV'] = source_dev_stage_list
-    df['Destination IP / Subnet - STG and/or DEV'] = dest_dev_stage_list
-    
-    print(f"\n✓ All {stats['rows_processed']:,} rows processed")
-    
-    # Save
-    print(f"\nSaving to: {output_file}...")
-    try:
-        df.to_excel(output_file, index=False, engine='openpyxl')
-        print(f"✓ File saved successfully")
-    except Exception as e:
-        print(f"ERROR: Failed to save - {e}")
-        return
-    
-    # Summary
-    print("\n" + "="*80)
-    print("SUMMARY:")
-    print("="*80)
-    print(f"  Rows processed:                    {stats['rows_processed']:,}")
-    print(f"  Rows with Source DEV/STAGE:        {stats['source_dev_stage_found']:,}")
-    print(f"  Rows with Destination DEV/STAGE:   {stats['dest_dev_stage_found']:,}")
-    print("\n✓ Extraction completed!")
-    print(f"\nNew columns added:")
-    print(f"  - Source IP / Subnet - STG and/or DEV")
-    print(f"  - Destination IP / Subnet - STG and/or DEV")
-    print("="*80)
-
-
-if __name__ == "__main__":
-    try:
-        import pandas
-        import openpyxl
-    except ImportError as e:
-        print("ERROR: Required library not found!")
-        print("\nPlease install: pip install pandas openpyxl")
-        print(f"\nMissing: {e}")
-        exit(1)
-    
-    main(INPUT_FILE, OUTPUT_FILE, CREATE_BACKUP)
