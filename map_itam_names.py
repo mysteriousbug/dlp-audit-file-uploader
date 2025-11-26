@@ -1,42 +1,160 @@
-# **4P Performance Review - Filled Out**
+import pandas as pd
+import numpy as np
+from datetime import timedelta
+from difflib import SequenceMatcher
 
----
+def detect_duplicate_incidents(df, time_window_hours=24, similarity_threshold=0.8):
+    """
+    Detect duplicate or similar incidents in the incident management data.
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The incident data
+    time_window_hours : int
+        Time window in hours to consider incidents as potentially duplicate (default: 24)
+    similarity_threshold : float
+        Similarity score threshold (0-1) for text comparison (default: 0.8)
+    
+    Returns:
+    --------
+    pandas.DataFrame
+        DataFrame containing potential duplicate incident groups
+    """
+    
+    # Convert date columns to datetime
+    df = df.copy()
+    df['opened_at'] = pd.to_datetime(df['opened_at'])
+    
+    # Sort by opened_at for efficient comparison
+    df = df.sort_values('opened_at').reset_index(drop=True)
+    
+    duplicate_groups = []
+    
+    # Compare each incident with subsequent incidents within the time window
+    for i in range(len(df)):
+        incident = df.iloc[i]
+        
+        # Define time window
+        end_time = incident['opened_at'] + timedelta(hours=time_window_hours)
+        
+        # Get incidents within time window
+        mask = (df['opened_at'] > incident['opened_at']) & (df['opened_at'] <= end_time)
+        candidates = df[mask]
+        
+        for j, candidate in candidates.iterrows():
+            # Check if incidents are from different users
+            different_users = incident['caller_id'] != candidate['caller_id']
+            
+            # Calculate similarity scores
+            similarities = {}
+            
+            # Short description similarity
+            if pd.notna(incident['short_description']) and pd.notna(candidate['short_description']):
+                similarities['short_description'] = text_similarity(
+                    str(incident['short_description']), 
+                    str(candidate['short_description'])
+                )
+            
+            # Description similarity
+            if pd.notna(incident['description']) and pd.notna(candidate['description']):
+                similarities['description'] = text_similarity(
+                    str(incident['description']), 
+                    str(candidate['description'])
+                )
+            
+            # Check for matching attributes
+            matching_attrs = {
+                'category': incident['category'] == candidate['category'],
+                'subcategory': incident['subcategory'] == candidate['subcategory'],
+                'priority': incident['priority'] == candidate['priority'],
+                'caller_location': incident['caller_id.location'] == candidate['caller_id.location'],
+                'business_service': incident['business_service'] == candidate['business_service'],
+                'affected_country': incident['u_affected_country'] == candidate['u_affected_country']
+            }
+            
+            # Calculate overall similarity score
+            text_sim = np.mean([s for s in similarities.values() if s is not None]) if similarities else 0
+            attr_match = sum(matching_attrs.values()) / len(matching_attrs)
+            overall_score = (text_sim * 0.6 + attr_match * 0.4)
+            
+            # If similarity exceeds threshold, flag as potential duplicate
+            if overall_score >= similarity_threshold:
+                time_diff = (candidate['opened_at'] - incident['opened_at']).total_seconds() / 3600
+                
+                duplicate_groups.append({
+                    'incident_1_number': incident['number'],
+                    'incident_2_number': candidate['number'],
+                    'incident_1_caller': incident['caller_id.user_name'],
+                    'incident_2_caller': candidate['caller_id.user_name'],
+                    'different_callers': different_users,
+                    'time_difference_hours': round(time_diff, 2),
+                    'opened_1': incident['opened_at'],
+                    'opened_2': candidate['opened_at'],
+                    'short_desc_similarity': round(similarities.get('short_description', 0), 3),
+                    'description_similarity': round(similarities.get('description', 0), 3),
+                    'overall_similarity_score': round(overall_score, 3),
+                    'matching_category': matching_attrs['category'],
+                    'matching_subcategory': matching_attrs['subcategory'],
+                    'matching_priority': matching_attrs['priority'],
+                    'short_desc_1': str(incident['short_description'])[:100],
+                    'short_desc_2': str(candidate['short_description'])[:100]
+                })
+    
+    # Convert to DataFrame
+    duplicates_df = pd.DataFrame(duplicate_groups)
+    
+    if len(duplicates_df) > 0:
+        # Sort by similarity score (descending) and time difference (ascending)
+        duplicates_df = duplicates_df.sort_values(
+            ['overall_similarity_score', 'time_difference_hours'],
+            ascending=[False, True]
+        )
+    
+    return duplicates_df
 
-| **4P Pillar** | **Standard Objectives** | **Deliverables** | **What went well?** | **What could have been better?** |
-|---------------|------------------------|------------------|---------------------|----------------------------------|
-| **Performance** | **Promote a culture of excellence:**<br>• Strategy: Work on audit engagements effectively to support GIA's Strategy and Audit Plan.<br>• Cost & Efficiency: Deliver audit and functional assignments/projects on time, on budget and to agreed standards.<br>• High Performance Culture & Innovation: Deliver high quality audit work and exercise professional skepticism.<br>• Ethics and professional courage: Promote and maintain the highest ethical standards. | • **DLP Audit**: 4 deliverables (test files, Streamlit app, URL testing, FTP server) - 78 hours<br>• **TPSA Audit**: RFI19 data analysis - 40 hours, identified 103 SLA violations with 99.5% accuracy<br>• **Catalyst Audit**: ISRR automation for 1,437 TPIDs with 160 variables - 70% time reduction<br>• **Control Mapping**: 56 SCB controls mapped to NIST, ISF, CIS frameworks - 60% faster than manual<br>• **Quantum Cryptography Workshop**: Technical presentation to 25+ attendees including senior management | • Delivered all audit assignments on time and within scope across DLP, TPSA, and Catalyst audits<br>• Exceeded quality standards with 99.5% accuracy in TPSA analysis and 99.8% in ISRR calculations<br>• Demonstrated professional skepticism by validating automated results against existing data and documenting discrepancies<br>• Maintained ethical standards by properly handling firewall constraints without unauthorized bypasses<br>• Created comprehensive documentation for audit transparency and repeatability<br>• Collaborated effectively with Shriram Kumar and Pavithran Rajendran for stakeholder alignment | • Could have engaged stakeholders earlier in ISRR project to identify edge cases before implementation<br>• Time management: Some deliverables took longer than estimated (Streamlit app: 40 hours vs estimated 30)<br>• Could have requested more frequent check-ins during complex projects to ensure continuous alignment<br>• Should have documented lessons learned immediately after each deliverable rather than retrospectively |
-| **Process** | **Innovation:**<br>• Intuitive systems and tools: Support the delivery of enhancements to processes, systems and tools.<br>• Champion innovation and increase the use of leading edge methods through use of data analytics and technology. | • **Python automation scripts** for ISRR calculation, URL testing, and data analysis<br>• **Streamlit web applications** for DLP testing and control mapping<br>• **AI-powered mapping tool** using Anthropic Claude for framework alignment<br>• **MongoDB cloud integration** for secure file storage and transfer testing<br>• **Reusable test file library** with 100+ standardized files<br>• **Technical documentation** on SharePoint and Confluence | • Successfully automated 90% of DLP testing workflow, saving 80+ hours per quarter<br>• Introduced AI/ML capabilities to audit processes through control mapping tool<br>• Created scalable solutions that handle 10x data volumes (10,000+ TPIDs vs current 1,437)<br>• Built intuitive Streamlit interfaces that team members adopted without training<br>• Pioneered cloud-based testing environment (first in team to use MongoDB Atlas for audit)<br>• Tools are now standard practice for team (URL testing scripts, test file library) | • Could have conducted more user testing before full deployment of Streamlit apps<br>• Should have created video tutorials for complex tools to accelerate team adoption<br>• Automation scripts could benefit from more robust error handling for edge cases<br>• Could have explored additional cloud platforms (AWS, Azure) for comparison<br>• Should have established automated testing pipelines for script validation<br>• Documentation could include more visual diagrams for technical architecture |
-| **People** | **Build and maintain a valued, engaged and motivated team:**<br>• Culture: Treat people with respect and build a collaborative culture. Participate in cross functional engagements.<br>• Learning: Continuously learn and develop for your current role, and your next role.<br>• Recognition: Promote a culture of recognition. | • **Cross-functional collaboration** with Shriram Kumar (TPSA) and Pavithran Rajendran (Risk Assessment)<br>• **Knowledge sharing** through Quantum Cryptography workshop to management and team<br>• **Tool documentation** and handover to enable team self-sufficiency<br>• **Peer support** by answering technical questions and troubleshooting<br>• **Continuous learning**: Mastered quantum computing, cloud deployment, web development, network security beyond core audit role | • Actively collaborated across audit teams (DLP, TPSA, Catalyst) fostering cross-functional learning<br>• Treated all stakeholders with respect during technical discussions and requirement gathering<br>• Shared credit for TPSA success with Shriram Kumar and Pavithran Rajendran in documentation<br>• Proactively offered to mentor peers on Python automation and Streamlit development<br>• Demonstrated growth mindset by learning 5+ new technologies in 4 months (Streamlit, MongoDB, pyftpdlib, PyPDF2, AI APIs)<br>• Recognized team contributions in Feedback365 and project documentation | • Could have organized more informal knowledge-sharing sessions (e.g., "Automation Office Hours")<br>• Should have been more proactive in seeking feedback from team members on tool usability<br>• Could have initiated peer code reviews to improve script quality collaboratively<br>• Missed opportunity to nominate team members for recognition on collaborative projects<br>• Should have documented personal learning journey to inspire other new joiners<br>• Could have sought more opportunities to participate in team-building activities during block leave period |
-| **Position** | **Trusted. Independent. Expert.**<br>• Industry: Develop an understanding of the industry trends (factors) impacting internal audit.<br>• Community: Participate in volunteering and community initiatives. | • **Industry awareness**: Researched quantum computing threats to banking (presented in workshop)<br>• **Technical expertise**: Built reputation as "go-to person" for Python automation and cloud tools<br>• **Independence**: Provided objective assessments in audit findings (e.g., SLA violations, ISRR discrepancies)<br>• **Community engagement**: Delivered green computing masterclass to African students (external to SC but showcases technical leadership) | • Established credibility as technical expert despite being new joiner (invited to present to senior management)<br>• Maintained independence by documenting both successful and problematic findings objectively<br>• Demonstrated expertise in emerging technologies (quantum cryptography, AI/ML) relevant to banking's future<br>• Positioned Standard Chartered at forefront of quantum security awareness through workshop<br>• Built trusted relationships with audit leads through reliable delivery and transparent communication<br>• Showed understanding of industry trends: AI in cybersecurity, quantum threats, cloud security | • Could have attended more industry conferences or webinars to deepen banking sector knowledge<br>• Should have participated in Standard Chartered's formal volunteering programs (e.g., financial literacy initiatives)<br>• Missed opportunity to write blog posts or articles on audit automation for internal SC platforms<br>• Could have engaged more with external audit community (e.g., IIA, ISACA) to benchmark practices<br>• Should have explored SC's community initiatives earlier rather than focusing solely on external teaching<br>• Could have joined SC's innovation challenges or hackathons to showcase technical capabilities to wider organization |
 
----
+def text_similarity(text1, text2):
+    """Calculate similarity between two text strings using SequenceMatcher."""
+    return SequenceMatcher(None, text1.lower(), text2.lower()).ratio()
 
-## **Summary Recommendations for Next Period:**
 
-**Performance:**
-- Establish checkpoint meetings every 2 weeks for complex projects
-- Create project estimation templates based on this period's learnings
-- Document lessons learned within 48 hours of completing each deliverable
+def generate_duplicate_report(duplicates_df):
+    """Generate a summary report of duplicate incidents."""
+    if len(duplicates_df) == 0:
+        print("No duplicate incidents detected.")
+        return
+    
+    print("=" * 80)
+    print("DUPLICATE INCIDENT DETECTION REPORT")
+    print("=" * 80)
+    print(f"\nTotal potential duplicate pairs found: {len(duplicates_df)}")
+    
+    # Summary statistics
+    print(f"\nDuplicates by different callers: {duplicates_df['different_callers'].sum()}")
+    print(f"Duplicates by same caller: {(~duplicates_df['different_callers']).sum()}")
+    print(f"\nAverage similarity score: {duplicates_df['overall_similarity_score'].mean():.3f}")
+    print(f"Average time difference: {duplicates_df['time_difference_hours'].mean():.2f} hours")
+    
+    # High confidence duplicates (>90% similarity)
+    high_conf = duplicates_df[duplicates_df['overall_similarity_score'] >= 0.9]
+    print(f"\nHigh confidence duplicates (≥90% similarity): {len(high_conf)}")
+    
+    # Show top 10 most similar
+    print("\n" + "=" * 80)
+    print("TOP 10 MOST SIMILAR INCIDENT PAIRS")
+    print("=" * 80)
+    
+    for idx, row in duplicates_df.head(10).iterrows():
+        print(f"\n{idx + 1}. Incidents: {row['incident_1_number']} & {row['incident_2_number']}")
+        print(f"   Similarity Score: {row['overall_similarity_score']:.3f}")
+        print(f"   Time Difference: {row['time_difference_hours']:.2f} hours")
+        print(f"   Callers: {row['incident_1_caller']} & {row['incident_2_caller']}")
+        print(f"   Short Desc 1: {row['short_desc_1']}")
+        print(f"   Short Desc 2: {row['short_desc_2']}")
 
-**Process:**
-- Develop video tutorials for all reusable tools
-- Implement automated testing for Python scripts
-- Create visual architecture diagrams for complex systems
-- Explore additional cloud platforms for cost-benefit analysis
 
-**People:**
-- Launch monthly "Automation Office Hours" for team knowledge sharing
-- Establish peer code review process with colleagues
-- Actively recognize team contributions in real-time via Feedback365
-- Create "New Joiner's Guide to Audit Automation" based on personal experience
-
-**Position:**
-- Attend at least 2 banking industry conferences or webinars per quarter
-- Enroll in Standard Chartered's formal volunteering programs
-- Write 1-2 technical blog posts for internal SC platforms
-- Join IIA or ISACA professional communities for external benchmarking
-- Participate in SC innovation challenges or hackathons
-
----
-
-**Would you like me to adjust any section or add more specific details?**
+# Example usage:
+# duplicates = detect_duplicate_incidents(df, time_window_hours=24, similarity_threshold=0.8)
+# generate_duplicate_report(duplicates)
+# duplicates.to_csv('duplicate_incidents.csv', index=False)
