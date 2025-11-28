@@ -1,24 +1,11 @@
-these are the columns in my incident population:Index(['number', 'active', 'opened_at', 'short_description', 'caller_id',
-       'caller_id.user_name', 'caller_id.location', 'priority', 'state',
-       'category', 'subcategory', 'assignment_group', 'assigned_to',
-       'sys_updated_on', 'sys_updated_by', 'u_time_to_detect', 'description',
-       'business_stc', 'sys_created_on', 'resolved_at', 'closed_at',
-       'u_service_offering_outage_start_time',
-       'u_service_offering_outage_end_time', 'problem_id', 'u_final_impact',
-       'major_incident_state', 'promoted_on', 'business_impact', 'u_country',
-       'business_duration', 'urgency', 'u_external_client_impact',
-       'sys_domain', 'reassignment_count', 'work_notes', 'child_incidents',
-       'approval', 'u_situation_manager', 'u_rca_managed_by', 'reopen_count',
-       'business_service', 'service_offering', 'contact_type',
-       'u_time_to_respond', 'impact', 'u_affected_country', 'caused_by'],
-      dtype='object').
+access management
+i want to include these questions
 
-i need to perform this test:
-Duplicate Incident Detection:
-Objective: To ensure accuracy, efficiency, and integrity of incident management data.
-Scenario Testing: to identify any same or similar incident logged by different users or logged within a short time window.
+1. explain the access management process end to end
+2. can you show me how access is configured (in any one db class among PostgreSQL, DB2, MongoDB, MSSQL, Oracle DB)
+3. can i get a list of all db owned ids?
+4. is there a report/document available for access management?
+5. can you tell me more about unauthorized privilege escalation? how do you identify unauth changes?
+6. are there access controls to restrict access to sensitive information? what tool are you using to monitor database activity?
 
-can you write the code for it?
-
-
-
+also you can include any more questions regarding access management if you need it 
