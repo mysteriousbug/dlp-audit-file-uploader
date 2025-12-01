@@ -1,106 +1,35 @@
-These are both fascinating and complex audits! Here are my insights on leveraging data analytics, automation, and advanced testing approaches for each:
+key questions:
 
-## **Post-Quantum Cryptography Audit**
+1. check if access matrix - is properly defined or not
+check all ids, all privileges
+if privileges are assigned appropriately
 
-### Data Analytics Opportunities
+task: map build account to privileges
 
-**Cryptographic Asset Discovery & Risk Prioritization:**
-- Analyze network traffic logs and application metadata to create a comprehensive inventory of cryptographic implementations across the organization
-- Use data analytics to identify "harvest now, decrypt later" vulnerability hotspots by correlating data sensitivity classifications with current encryption methods
-- Map cryptographic dependencies across systems to identify critical paths where quantum-vulnerable algorithms pose the highest business risk
+2. database samples - 
+verify what id/roles for users have access to db, what privileges do they have
 
-**Timeline & Readiness Gap Analysis:**
-- Analyze historical system upgrade cycles and technical debt metrics to predict realistic migration timelines
-- Correlate cryptographic agility assessments with system age, complexity, and business criticality to identify high-risk legacy systems
+3. pid vaulting
+for all ids from task 2, check if these are vaulted in onevault/hashicorp
 
-**Vendor & Third-Party Risk:**
-- Aggregate and analyze vendor cryptographic disclosures and product roadmaps to identify supply chain vulnerabilities
-- Use data analytics on contract terms and SLAs to assess quantum-readiness obligations
+4. DAM process + unauth change process
+ask if there are audit trail logs for the DAM process
 
-### Automated Control Testing
+5. verify if all requestor groups for db access are legit/appropriate
 
-**Cryptographic Standards Compliance:**
-- Deploy automated scanning tools to continuously verify that new implementations follow quantum-resistant standards (NIST post-quantum algorithms)
-- Automate testing of HSM configurations against quantum-safe parameter requirements
-- Create automated checks for certificate lifecycles and key rotation policies
 
-**Algorithm Detection:**
-- Use automated code scanning and network analysis tools to detect usage of vulnerable algorithms (RSA, ECC, DSA) across the environment
-- Implement continuous monitoring dashboards showing real-time cryptographic posture
+other notes:
+1. PID team - monthly - workflow - approvals - PSRM team ID
+2. in onevault when an id is withdrawn (id:password is a key value pair) - alert is sent to harish - cr reference given by harish - session managed id is sent to the user
+non interactive database- hashicorp
+interactive database - onevault
+3. change management team is responsible to identify unauth changes. a monthly review happens in this team. this team is head by januar
+4. app level encryption env ready
+encryption at rest
+at db
+5. break glass accounts in one vault - can be identified against account names
+these accounts have high/medium privileges
+6. pii data not visible to database team - it is masked by - app team - via dash process
 
-### Advanced Testing Approaches
 
-**Threat Modeling & Simulation:**
-- Conduct "quantum threat" tabletop exercises simulating cryptanalytic attacks to test incident response readiness
-- Model the organization's cryptographic architecture to identify cascade failure points if quantum attacks compromise key systems
 
-**Hybrid Cryptography Testing:**
-- Test dual-algorithm implementations (classical + post-quantum) to validate the organization's transition strategy
-- Assess performance impacts of quantum-resistant algorithms on critical business processes
-
-**Governance Deep-Dive:**
-- Since you mention decentralized cryptography governance, map decision-making flows and identify gaps in accountability or overlapping responsibilities that could delay quantum migration
-
----
-
-## **Insider Threat Audit**
-
-### Data Analytics Opportunities
-
-**Behavioral Analytics & Anomaly Detection:**
-- Analyze access patterns, data exfiltration volumes, and privileged account usage to establish behavioral baselines
-- Use unsupervised machine learning to identify outliers that may indicate malicious insider activity (unusual login times, abnormal data access volumes, geographic anomalies)
-- Correlate HR data (performance issues, terminations, access changes) with security events to identify elevated-risk periods
-
-**Fusion Program Effectiveness:**
-- Analyze case data across cyber, fraud, financial crime, and physical security domains to measure cross-referencing effectiveness
-- Identify gaps where related incidents weren't correlated or where handoffs between teams failed
-- Use network analysis to visualize collaboration patterns and identify silos
-
-**Access Rights Analytics:**
-- Analyze privileged access distributions and duration to identify excessive permissions or "access creep"
-- Compare actual data access patterns against job roles to detect inappropriate access that wasn't flagged
-
-### Automated Control Testing
-
-**Access Control Testing:**
-- Automate periodic testing of segregation of duties controls and privileged access reviews
-- Implement automated checks for orphaned accounts, stale credentials, or violations of least-privilege principles
-- Test Data Loss Prevention (DLP) rule effectiveness through simulated exfiltration attempts
-
-**Monitoring & Alerting Validation:**
-- Automate testing of User and Entity Behavior Analytics (UEBA) alert thresholds using synthetic insider threat scenarios
-- Validate that security information and event management (SIEM) rules correctly detect known insider threat indicators
-
-**Fusion Program Integration:**
-- Create automated tests to verify that alerts and cases properly flow between cyber, fraud, and other Fusion program participants
-- Test API integrations and data-sharing protocols between platforms
-
-### Advanced Testing Approaches
-
-**Red Team Insider Simulations:**
-- Conduct authorized insider threat simulations where audit team members (with appropriate approvals) attempt data exfiltration or privilege escalation to test detective controls
-- Test whether the Fusion program successfully correlates multi-domain indicators from these simulations
-
-**Social Network Analysis:**
-- Map organizational relationships and communication patterns to identify high-risk collaboration networks or isolated actors who might pose elevated risk
-- Analyze whether monitoring adequately covers critical relationships and data flows
-
-**Qualitative Program Maturity Assessment:**
-- Interview stakeholders across the Fusion program to assess cultural factors: trust levels, reporting mechanisms, psychological safety
-- Test whether whistleblower and reporting channels are genuinely confidential and effective
-
-**Tiered Risk Scenarios:**
-- Develop scenario-based testing for different insider archetypes (malicious insider, negligent employee, compromised credential) to ensure controls address the full threat spectrum
-- Test whether privilege levels appropriately correspond to risk tiers
-
----
-
-## **Cross-Cutting Recommendations**
-
-For both audits, consider:
-- **Continuous Auditing:** Implement ongoing automated monitoring rather than point-in-time testing for critical controls
-- **Visualization:** Use dashboards and heat maps to communicate complex risk landscapes to leadership
-- **Integration Testing:** Both audits involve multiple systems and stakeholders—test whether governance, communication, and technical integration work as intended under stress
-
-These approaches should give you deeper insights while improving efficiency. Would you like me to elaborate on any specific area?
