@@ -1,3 +1,10 @@
-streamlit
-pymongo
-matplotlib
+These are the mandatory fields that must be populated for every incident as per the state.
+New State: Number, State, Caller, Category, Subcategory, Service, Service Offering, Channel, External Client Impact, Impact, Urgency, Assignment Group, Short Description, Description, Business Impact, Work Notes, Situation Manager
+In Progress State: Assignment Group, Assigned To, Incidents by same caller tab
+Resolved State: Resolution Code, Resolution Notes, Business Impact, Configuration Item, EDIT
+Open State: Number, Incident, Short Description, State, Priority, Assignment Group
+Working in Progress State: Description
+Pending State: Work Notes
+Closed State: Resolution Notes
+
+the input sheet has multiple columns. you need to check the 'state' column. as per the state column's values, check if the mandatory field columns are present or not (names will be number, work_notes, etc). if they aren't present, put that entire row from the original input file into a new sheet for anomalies.
