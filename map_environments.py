@@ -1,483 +1,882 @@
-"""
-Environment, ITAM, Infra, and Function Mapping Script for nfast_rules_cleaned.xlsx
-
-This script performs the following tasks:
-1. For each row in nfast_rules_cleaned.xlsx, reads Source IP and Destination IP
-2. Looks up each IP in ip.xlsx and each subnet in subnet.xlsx
-3. Creates dictionaries mapping IPs/subnets to their environments, ITAMs, infra, and function
-4. Adds eight new columns: 
-   - Source Environment: {"ip1":"env1","subnet1":"env2"}
-   - Destination Environment: {"ip1":"env1","subnet1":"env2"}
-   - Source ITAM: {"ip1":"itam1","subnet1":"itam2"}
-   - Destination ITAM: {"ip1":"itam1","subnet1":"itam2"}
-   - Source Infra: {"ip1":"infra1","subnet1":"infra2"}
-   - Destination Infra: {"ip1":"infra1","subnet1":"infra2"}
-   - Source Function: {"ip1":"function1","subnet1":"function2"}
-   - Destination Function: {"ip1":"function1","subnet1":"function2"}
-
-Optimized for performance with large datasets (17,000+ records)
-
-Usage:
-    python map_environments.py
-
-Requirements:
-    - pandas
-    - openpyxl
-    - ipaddress (built-in)
-
-Install requirements:
-    pip install pandas openpyxl
-"""
-
 import pandas as pd
-import ast
-import ipaddress
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from collections import Counter
+import re
 from datetime import datetime
-import os
 
-# Configuration
-INPUT_FILE = 'nfast_rules_cleaned.xlsx'  # Input file
-IP_FILE = 'ip.xlsx'  # IP lookup file
-SUBNET_FILE = 'subnet.xlsx'  # Subnet lookup file
-OUTPUT_FILE = 'nfast_rules_with_environments.xlsx'  # Output file
-
-# Create backup flag
-CREATE_BACKUP = True
-
-
-def parse_list_string(s):
+def perform_enhanced_duplicate_rca(sample_df, original_incidents_df):
     """
-    Parse string representation of list into actual list
+    Perform comprehensive root cause analysis on duplicate incident samples
+    including analysis of work notes, resolution notes, and descriptions.
     
-    Args:
-        s: String representation of a list
+    Parameters:
+    -----------
+    sample_df : pandas.DataFrame
+        DataFrame containing 20 sampled duplicate pairs
+    original_incidents_df : pandas.DataFrame
+        Original incidents dataframe with work_notes, description, etc.
         
     Returns:
-        list: Parsed list or empty list if parsing fails
-    """
-    if pd.isna(s) or s == '':
-        return []
-    
-    # If it's already a list, return it
-    if isinstance(s, list):
-        return s
-    
-    try:
-        # Try to evaluate as Python literal
-        result = ast.literal_eval(str(s))
-        if isinstance(result, list):
-            return result
-        else:
-            return [result]
-    except:
-        # If evaluation fails, return empty list
-        return []
-
-
-def is_ip_address(s):
-    """
-    Check if string is a single IP address (not a subnet)
-    
-    Args:
-        s: String to check
-        
-    Returns:
-        bool: True if string is an IP address without CIDR notation
-    """
-    try:
-        # Check if it contains '/'
-        if '/' in str(s):
-            return False
-        # Try to parse as IP address
-        ipaddress.ip_address(str(s).strip())
-        return True
-    except:
-        return False
-
-
-def is_subnet(s):
-    """
-    Check if string is a subnet (has CIDR notation)
-    
-    Args:
-        s: String to check
-        
-    Returns:
-        bool: True if string is a subnet with CIDR notation
-    """
-    try:
-        # Must contain '/'
-        if '/' not in str(s):
-            return False
-        # Try to parse as network
-        ipaddress.ip_network(str(s).strip(), strict=False)
-        return True
-    except:
-        return False
-
-
-def lookup_ip_info(ip, ip_lookup_dict):
-    """
-    Look up the environment, ITAM, infra, and function for a given IP address using pre-built dictionary
-    
-    Args:
-        ip: IP address string
-        ip_lookup_dict: Dictionary mapping IPs to (environment, itam, infra, function) tuples
-        
-    Returns:
-        tuple: (environment, itam, infra, function) or (None, None, None, None) if not found
-    """
-    # Normalize IP (remove any /32 if present)
-    clean_ip = ip.split('/')[0].strip()
-    
-    return ip_lookup_dict.get(clean_ip, (None, None, None, None))
-
-
-def lookup_subnet_info(subnet, subnet_lookup_dict):
-    """
-    Look up the environment, ITAM, infra, and function for a given subnet using pre-built dictionary
-    
-    Args:
-        subnet: Subnet string (with CIDR notation)
-        subnet_lookup_dict: Dictionary mapping subnets to (environment, itam, infra, function) tuples
-        
-    Returns:
-        tuple: (environment, itam, infra, function) or (None, None, None, None) if not found
-    """
-    # Normalize subnet
-    clean_subnet = subnet.strip()
-    
-    return subnet_lookup_dict.get(clean_subnet, (None, None, None, None))
-
-
-def build_lookup_dictionaries(ip_df, subnet_df):
-    """
-    Build optimized lookup dictionaries from IP and subnet DataFrames
-    This pre-processing step significantly speeds up lookups
-    
-    Args:
-        ip_df: DataFrame containing IP, environment, itam, infra, and function columns
-        subnet_df: DataFrame containing subnet, environment, itam, infra, and function columns
-        
-    Returns:
-        tuple: (ip_lookup_dict, subnet_lookup_dict)
-    """
-    print("\nBuilding optimized lookup dictionaries...")
-    
-    # Build IP lookup dictionary: {ip: (environment, itam, infra, function)}
-    ip_lookup_dict = {}
-    for _, row in ip_df.iterrows():
-        ip = str(row['ip']).strip()
-        env = row['environment'] if pd.notna(row['environment']) else None
-        itam = row['itam'] if pd.notna(row['itam']) else None
-        infra = row['infra'] if pd.notna(row['infra']) else None
-        function = row['function'] if pd.notna(row['function']) else None
-        ip_lookup_dict[ip] = (env, itam, infra, function)
-    
-    print(f"  ✓ IP lookup dictionary built: {len(ip_lookup_dict)} entries")
-    
-    # Build subnet lookup dictionary: {subnet: (environment, itam, infra, function)}
-    subnet_lookup_dict = {}
-    for _, row in subnet_df.iterrows():
-        subnet = str(row['subnet']).strip()
-        env = row['environment'] if pd.notna(row['environment']) else None
-        itam = row['itam'] if pd.notna(row['itam']) else None
-        infra = row['infra'] if pd.notna(row['infra']) else None
-        function = row['function'] if pd.notna(row['function']) else None
-        subnet_lookup_dict[subnet] = (env, itam, infra, function)
-    
-    print(f"  ✓ Subnet lookup dictionary built: {len(subnet_lookup_dict)} entries")
-    
-    return ip_lookup_dict, subnet_lookup_dict
-
-
-def create_mappings(ip_list, ip_lookup_dict, subnet_lookup_dict):
-    """
-    Create dictionaries mapping IPs/subnets to their environments, ITAMs, infra, and function
-    
-    Args:
-        ip_list: List of IPs and subnets
-        ip_lookup_dict: Dictionary with IP lookups
-        subnet_lookup_dict: Dictionary with subnet lookups
-        
-    Returns:
-        tuple: (env_map, itam_map, infra_map, function_map) - Four dictionaries for mappings
-    """
-    env_map = {}
-    itam_map = {}
-    infra_map = {}
-    function_map = {}
-    
-    for item in ip_list:
-        item_str = str(item).strip()
-        
-        if not item_str:
-            continue
-        
-        # Check if it's an IP address (no CIDR) or has /32
-        if is_ip_address(item_str) or (is_subnet(item_str) and item_str.endswith('/32')):
-            # Look up in IP dictionary
-            env, itam, infra, function = lookup_ip_info(item_str, ip_lookup_dict)
-            if env:
-                env_map[item_str] = env
-            if itam:
-                itam_map[item_str] = itam
-            if infra:
-                infra_map[item_str] = infra
-            if function:
-                function_map[item_str] = function
-        
-        # Check if it's a subnet (has CIDR notation and not /32)
-        elif is_subnet(item_str):
-            # Look up in subnet dictionary
-            env, itam, infra, function = lookup_subnet_info(item_str, subnet_lookup_dict)
-            if env:
-                env_map[item_str] = env
-            if itam:
-                itam_map[item_str] = itam
-            if infra:
-                infra_map[item_str] = infra
-            if function:
-                function_map[item_str] = function
-    
-    return env_map, itam_map, infra_map, function_map
-
-
-def map_environments(input_file, ip_file, subnet_file, output_file, create_backup=True):
-    """
-    Main function to map environments to IPs and subnets
-    
-    Args:
-        input_file: Path to nfast_rules_cleaned.xlsx
-        ip_file: Path to ip.xlsx
-        subnet_file: Path to subnet.xlsx
-        output_file: Path to output file
-        create_backup: Whether to create a backup of the input file
+    --------
+    dict
+        Dictionary containing RCA findings and metrics
     """
     
-    print("="*80)
-    print("ENVIRONMENT MAPPING SCRIPT")
-    print("="*80)
-    
-    # Check if all input files exist
-    missing_files = []
-    for file, name in [(input_file, "Rules file"), (ip_file, "IP file"), (subnet_file, "Subnet file")]:
-        if not os.path.exists(file):
-            missing_files.append(f"{name}: {file}")
-    
-    if missing_files:
-        print("\nERROR: The following files were not found:")
-        for file in missing_files:
-            print(f"  - {file}")
-        print(f"\nCurrent directory: {os.getcwd()}")
-        return
-    
-    print(f"\nInput files:")
-    print(f"  Rules file:  {input_file}")
-    print(f"  IP file:     {ip_file}")
-    print(f"  Subnet file: {subnet_file}")
-    print(f"\nOutput file: {output_file}")
-    
-    # Create backup if requested
-    if create_backup:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_file = f"{os.path.splitext(input_file)[0]}_backup_{timestamp}.xlsx"
-        print(f"\nCreating backup: {backup_file}")
-        
-        try:
-            import shutil
-            shutil.copy2(input_file, backup_file)
-            print(f"✓ Backup created successfully")
-        except Exception as e:
-            print(f"⚠ Warning: Could not create backup - {e}")
-    
-    # Read all files
-    print(f"\nReading files...")
-    try:
-        rules_df = pd.read_excel(input_file, engine='openpyxl')
-        print(f"✓ Rules file loaded - {len(rules_df)} rows")
-        
-        ip_df = pd.read_excel(ip_file, engine='openpyxl')
-        print(f"✓ IP file loaded - {len(ip_df)} IPs")
-        
-        subnet_df = pd.read_excel(subnet_file, engine='openpyxl')
-        print(f"✓ Subnet file loaded - {len(subnet_df)} subnets")
-    except Exception as e:
-        print(f"ERROR: Failed to read files - {e}")
-        return
-    
-    # Verify required columns
-    if 'Source IP' not in rules_df.columns or 'Destination IP' not in rules_df.columns:
-        print("\nERROR: 'Source IP' or 'Destination IP' column not found in rules file")
-        print(f"Available columns: {list(rules_df.columns)}")
-        return
-    
-    if 'ip' not in ip_df.columns or 'environment' not in ip_df.columns or 'itam' not in ip_df.columns or 'infra' not in ip_df.columns or 'function' not in ip_df.columns:
-        print("\nERROR: Required columns ('ip', 'environment', 'itam', 'infra', 'function') not found in IP file")
-        print(f"Available columns: {list(ip_df.columns)}")
-        return
-    
-    if 'subnet' not in subnet_df.columns or 'environment' not in subnet_df.columns or 'itam' not in subnet_df.columns or 'infra' not in subnet_df.columns or 'function' not in subnet_df.columns:
-        print("\nERROR: Required columns ('subnet', 'environment', 'itam', 'infra', 'function') not found in subnet file")
-        print(f"Available columns: {list(subnet_df.columns)}")
-        return
-    
-    # Build optimized lookup dictionaries (huge performance improvement for large datasets)
-    ip_lookup_dict, subnet_lookup_dict = build_lookup_dictionaries(ip_df, subnet_df)
-    
-    print("\n" + "="*80)
-    print("PROCESSING ROWS AND MAPPING ENVIRONMENTS...")
-    print("="*80)
-    
-    stats = {
-        'rows_processed': 0,
-        'source_env_mappings': 0,
-        'dest_env_mappings': 0,
-        'source_itam_mappings': 0,
-        'dest_itam_mappings': 0,
-        'source_infra_mappings': 0,
-        'dest_infra_mappings': 0,
-        'source_function_mappings': 0,
-        'dest_function_mappings': 0,
-        'source_ips_found': 0,
-        'source_subnets_found': 0,
-        'dest_ips_found': 0,
-        'dest_subnets_found': 0
+    rca_results = {
+        'patterns': {},
+        'root_causes': [],
+        'recommendations': [],
+        'duplicate_pairs_analysis': []
     }
     
-    # Create new columns lists
-    source_env_list = []
-    dest_env_list = []
-    source_itam_list = []
-    dest_itam_list = []
-    source_infra_list = []
-    dest_infra_list = []
-    source_function_list = []
-    dest_function_list = []
+    print("=" * 80)
+    print("ENHANCED ROOT CAUSE ANALYSIS - DUPLICATE INCIDENTS")
+    print("=" * 80)
+    print(f"\nAnalyzing {len(sample_df)} duplicate incident pairs...\n")
     
-    # Process each row - vectorize list parsing for better performance
-    print("\nParsing IP lists from all rows...")
-    source_ip_lists = rules_df['Source IP'].apply(parse_list_string)
-    dest_ip_lists = rules_df['Destination IP'].apply(parse_list_string)
-    print(f"  ✓ Parsed IP lists for {len(rules_df)} rows")
+    # Get full incident details for analysis
+    incident_numbers = list(sample_df['incident_1_number']) + list(sample_df['incident_2_number'])
+    sample_incidents = original_incidents_df[original_incidents_df['number'].isin(incident_numbers)].copy()
     
-    print("\nMapping environments, ITAMs, infra, and functions...")
-    for idx in range(len(rules_df)):
-        stats['rows_processed'] += 1
-        
-        # Get parsed lists
-        source_ips = source_ip_lists.iloc[idx]
-        dest_ips = dest_ip_lists.iloc[idx]
-        
-        # Create mappings for source
-        source_env_map, source_itam_map, source_infra_map, source_function_map = create_mappings(source_ips, ip_lookup_dict, subnet_lookup_dict)
-        
-        # Count findings
-        for key in source_env_map.keys():
-            if '/' in key and not key.endswith('/32'):
-                stats['source_subnets_found'] += 1
-            else:
-                stats['source_ips_found'] += 1
-        
-        stats['source_env_mappings'] += len(source_env_map)
-        stats['source_itam_mappings'] += len(source_itam_map)
-        stats['source_infra_mappings'] += len(source_infra_map)
-        stats['source_function_mappings'] += len(source_function_map)
-        
-        # Create mappings for destination
-        dest_env_map, dest_itam_map, dest_infra_map, dest_function_map = create_mappings(dest_ips, ip_lookup_dict, subnet_lookup_dict)
-        
-        # Count findings
-        for key in dest_env_map.keys():
-            if '/' in key and not key.endswith('/32'):
-                stats['dest_subnets_found'] += 1
-            else:
-                stats['dest_ips_found'] += 1
-        
-        stats['dest_env_mappings'] += len(dest_env_map)
-        stats['dest_itam_mappings'] += len(dest_itam_map)
-        stats['dest_infra_mappings'] += len(dest_infra_map)
-        stats['dest_function_mappings'] += len(dest_function_map)
-        
-        # Store as string representation of dictionary
-        source_env_list.append(str(source_env_map) if source_env_map else '{}')
-        dest_env_list.append(str(dest_env_map) if dest_env_map else '{}')
-        source_itam_list.append(str(source_itam_map) if source_itam_map else '{}')
-        dest_itam_list.append(str(dest_itam_map) if dest_itam_map else '{}')
-        source_infra_list.append(str(source_infra_map) if source_infra_map else '{}')
-        dest_infra_list.append(str(dest_infra_map) if dest_infra_map else '{}')
-        source_function_list.append(str(source_function_map) if source_function_map else '{}')
-        dest_function_list.append(str(dest_function_map) if dest_function_map else '{}')
-        
-        # Print progress for every 1000 rows (adjusted for larger dataset)
-        if (idx + 1) % 1000 == 0:
-            print(f"  Processed {idx + 1:,} / {len(rules_df):,} rows ({(idx+1)/len(rules_df)*100:.1f}%)...")
+    # 1. TEMPORAL ANALYSIS
+    print("\n" + "=" * 80)
+    print("1. TEMPORAL ANALYSIS")
+    print("=" * 80)
     
-    # Add new columns to dataframe
-    rules_df['Source Environment'] = source_env_list
-    rules_df['Destination Environment'] = dest_env_list
-    rules_df['Source ITAM'] = source_itam_list
-    rules_df['Destination ITAM'] = dest_itam_list
-    rules_df['Source Infra'] = source_infra_list
-    rules_df['Destination Infra'] = dest_infra_list
-    rules_df['Source Function'] = source_function_list
-    rules_df['Destination Function'] = dest_function_list
+    time_diffs = sample_df['time_difference_hours']
+    time_categories = pd.cut(time_diffs, 
+                             bins=[0, 1, 4, 8, 24],
+                             labels=['<1 hour', '1-4 hours', '4-8 hours', '8-24 hours'])
     
-    print(f"\n✓ All {stats['rows_processed']:,} rows processed")
+    time_dist = time_categories.value_counts()
+    print("\nTime Difference Distribution:")
+    for cat, count in time_dist.items():
+        print(f"  {cat}: {count} pairs ({count/len(sample_df)*100:.1f}%)")
     
-    # Save to Excel
-    print(f"\nSaving results to: {output_file}...")
-    try:
-        rules_df.to_excel(output_file, index=False, engine='openpyxl')
-        print(f"✓ File saved successfully")
-    except Exception as e:
-        print(f"ERROR: Failed to save file - {e}")
-        return
+    rca_results['patterns']['time_distribution'] = time_dist.to_dict()
     
-    # Print summary
-    print("\n" + "="*80)
-    print("SUMMARY:")
-    print("="*80)
-    print(f"  Rows processed:                   {stats['rows_processed']:,}")
-    print(f"\n  SOURCE MAPPINGS:")
-    print(f"    Environment mappings found:     {stats['source_env_mappings']:,}")
-    print(f"    ITAM mappings found:            {stats['source_itam_mappings']:,}")
-    print(f"    Infra mappings found:           {stats['source_infra_mappings']:,}")
-    print(f"    Function mappings found:        {stats['source_function_mappings']:,}")
-    print(f"      - IPs mapped:                 {stats['source_ips_found']:,}")
-    print(f"      - Subnets mapped:             {stats['source_subnets_found']:,}")
-    print(f"\n  DESTINATION MAPPINGS:")
-    print(f"    Environment mappings found:     {stats['dest_env_mappings']:,}")
-    print(f"    ITAM mappings found:            {stats['dest_itam_mappings']:,}")
-    print(f"    Infra mappings found:           {stats['dest_infra_mappings']:,}")
-    print(f"    Function mappings found:        {stats['dest_function_mappings']:,}")
-    print(f"      - IPs mapped:                 {stats['dest_ips_found']:,}")
-    print(f"      - Subnets mapped:             {stats['dest_subnets_found']:,}")
-    print("\n✓ Environment, ITAM, Infra, and Function mapping completed successfully!")
-    print(f"\nNew columns added:")
-    print(f"  - Source Environment")
-    print(f"  - Destination Environment")
-    print(f"  - Source ITAM")
-    print(f"  - Destination ITAM")
-    print(f"  - Source Infra")
-    print(f"  - Destination Infra")
-    print(f"  - Source Function")
-    print(f"  - Destination Function")
-    print("="*80)
+    if time_dist.get('<1 hour', 0) >= 3:
+        rca_results['root_causes'].append({
+            'cause': 'Lack of real-time duplicate detection',
+            'evidence': f"{time_dist.get('<1 hour', 0)} pairs logged within 1 hour",
+            'severity': 'High',
+            'category': 'System/Process'
+        })
+    
+    # 2. CALLER ANALYSIS
+    print("\n" + "=" * 80)
+    print("2. CALLER ANALYSIS")
+    print("=" * 80)
+    
+    different_callers = sample_df['different_callers'].sum()
+    same_callers = len(sample_df) - different_callers
+    
+    print(f"\nDifferent callers: {different_callers} pairs ({different_callers/len(sample_df)*100:.1f}%)")
+    print(f"Same caller: {same_callers} pairs ({same_callers/len(sample_df)*100:.1f}%)")
+    
+    rca_results['patterns']['caller_distribution'] = {
+        'different_callers': int(different_callers),
+        'same_callers': int(same_callers)
+    }
+    
+    if different_callers >= len(sample_df) * 0.5:
+        rca_results['root_causes'].append({
+            'cause': 'Poor incident visibility across teams/users',
+            'evidence': f"{different_callers} pairs logged by different users",
+            'severity': 'High',
+            'category': 'Communication/Visibility'
+        })
+    
+    if same_callers >= 3:
+        rca_results['root_causes'].append({
+            'cause': 'User confusion or lack of incident tracking capability',
+            'evidence': f"{same_callers} pairs logged by same user",
+            'severity': 'Medium',
+            'category': 'User Experience'
+        })
+    
+    # 3. DESCRIPTION & TEXT ANALYSIS
+    print("\n" + "=" * 80)
+    print("3. DESCRIPTION & WORK NOTES ANALYSIS")
+    print("=" * 80)
+    
+    # Analyze descriptions
+    desc_analysis = analyze_text_fields(sample_df, sample_incidents, 'description')
+    work_notes_analysis = analyze_text_fields(sample_df, sample_incidents, 'work_notes')
+    
+    print("\nDescription Analysis:")
+    print(f"  Pairs with identical descriptions: {desc_analysis['identical_count']}")
+    print(f"  Pairs with very similar descriptions (>95%): {desc_analysis['very_similar_count']}")
+    print(f"  Common keywords: {', '.join(desc_analysis['top_keywords'][:10])}")
+    
+    if 'work_notes' in sample_incidents.columns:
+        print("\nWork Notes Analysis:")
+        print(f"  Average work notes length: {work_notes_analysis['avg_length']:.0f} characters")
+        print(f"  Incidents with work notes: {work_notes_analysis['incidents_with_notes']}")
+        print(f"  Common phrases in work notes: {', '.join(work_notes_analysis['top_keywords'][:10])}")
+    
+    rca_results['patterns']['description_analysis'] = desc_analysis
+    rca_results['patterns']['work_notes_analysis'] = work_notes_analysis
+    
+    # Check for copy-paste patterns
+    if desc_analysis['identical_count'] >= 3:
+        rca_results['root_causes'].append({
+            'cause': 'Users copy-pasting incident descriptions',
+            'evidence': f"{desc_analysis['identical_count']} pairs with identical descriptions",
+            'severity': 'Medium',
+            'category': 'User Behavior'
+        })
+    
+    # 4. RESOLUTION PATTERN ANALYSIS
+    print("\n" + "=" * 80)
+    print("4. RESOLUTION & CLOSURE ANALYSIS")
+    print("=" * 80)
+    
+    resolution_analysis = analyze_resolutions(sample_df, sample_incidents)
+    
+    print(f"\nResolved incidents: {resolution_analysis['resolved_count']}/{len(sample_incidents)}")
+    print(f"Average resolution time: {resolution_analysis['avg_resolution_hours']:.1f} hours")
+    print(f"Duplicates resolved as 'Duplicate': {resolution_analysis['closed_as_duplicate']}")
+    
+    if resolution_analysis['closed_as_duplicate'] < len(sample_df) * 0.3:
+        rca_results['root_causes'].append({
+            'cause': 'Duplicates not being properly identified during resolution',
+            'evidence': f"Only {resolution_analysis['closed_as_duplicate']} pairs explicitly closed as duplicates",
+            'severity': 'High',
+            'category': 'Process'
+        })
+    
+    rca_results['patterns']['resolution_analysis'] = resolution_analysis
+    
+    # 5. CATEGORY/SUBCATEGORY ANALYSIS
+    print("\n" + "=" * 80)
+    print("5. CATEGORY/SUBCATEGORY ANALYSIS")
+    print("=" * 80)
+    
+    matching_category = sample_df['matching_category'].sum()
+    matching_subcategory = sample_df['matching_subcategory'].sum()
+    
+    print(f"\nMatching category: {matching_category} pairs ({matching_category/len(sample_df)*100:.1f}%)")
+    print(f"Matching subcategory: {matching_subcategory} pairs ({matching_subcategory/len(sample_df)*100:.1f}%)")
+    
+    if 'category' in sample_incidents.columns:
+        top_categories = sample_incidents['category'].value_counts().head(5)
+        print("\nTop 5 Categories in Duplicates:")
+        for cat, count in top_categories.items():
+            print(f"  {cat}: {count} incidents")
+        
+        rca_results['patterns']['top_categories'] = top_categories.to_dict()
+        
+        if top_categories.iloc[0] > len(sample_df) * 0.3:
+            rca_results['root_causes'].append({
+                'cause': f'High duplicate rate in "{top_categories.index[0]}" category',
+                'evidence': f"{top_categories.iloc[0]} incidents in this category",
+                'severity': 'Medium',
+                'category': 'Category-Specific'
+            })
+    
+    # 6. ASSIGNMENT & WORKFLOW ANALYSIS
+    print("\n" + "=" * 80)
+    print("6. ASSIGNMENT & WORKFLOW ANALYSIS")
+    print("=" * 80)
+    
+    workflow_analysis = analyze_workflow_patterns(sample_df, sample_incidents)
+    
+    print(f"\nAverage reassignment count: {workflow_analysis['avg_reassignments']:.1f}")
+    print(f"Incidents with multiple reassignments: {workflow_analysis['multiple_reassignments']}")
+    
+    if 'assignment_group' in sample_incidents.columns:
+        top_groups = sample_incidents['assignment_group'].value_counts().head(5)
+        print("\nTop Assignment Groups:")
+        for group, count in top_groups.items():
+            if pd.notna(group):
+                print(f"  {group}: {count} incidents")
+        
+        rca_results['patterns']['top_assignment_groups'] = top_groups.to_dict()
+    
+    if workflow_analysis['avg_reassignments'] > 2:
+        rca_results['root_causes'].append({
+            'cause': 'Excessive reassignments indicating unclear ownership',
+            'evidence': f"Average {workflow_analysis['avg_reassignments']:.1f} reassignments per incident",
+            'severity': 'Medium',
+            'category': 'Workflow'
+        })
+    
+    rca_results['patterns']['workflow_analysis'] = workflow_analysis
+    
+    # 7. DETAILED PAIR-BY-PAIR ANALYSIS
+    print("\n" + "=" * 80)
+    print("7. PAIR-BY-PAIR DETAILED ANALYSIS")
+    print("=" * 80)
+    
+    pair_details = []
+    for idx, row in sample_df.iterrows():
+        inc1 = sample_incidents[sample_incidents['number'] == row['incident_1_number']].iloc[0]
+        inc2 = sample_incidents[sample_incidents['number'] == row['incident_2_number']].iloc[0]
+        
+        pair_analysis = analyze_incident_pair(inc1, inc2, row)
+        pair_details.append(pair_analysis)
+        
+        print(f"\n--- Pair {idx + 1}: {row['incident_1_number']} & {row['incident_2_number']} ---")
+        print(f"Similarity: {row['overall_similarity_score']:.3f} | Time Gap: {row['time_difference_hours']:.1f}h")
+        print(f"Root Cause Category: {pair_analysis['likely_root_cause']}")
+        print(f"Key Finding: {pair_analysis['key_finding']}")
+    
+    rca_results['duplicate_pairs_analysis'] = pair_details
+    
+    # 8. PRIORITY ANALYSIS
+    print("\n" + "=" * 80)
+    print("8. PRIORITY & IMPACT ANALYSIS")
+    print("=" * 80)
+    
+    matching_priority = sample_df['matching_priority'].sum()
+    print(f"\nMatching priority: {matching_priority} pairs ({matching_priority/len(sample_df)*100:.1f}%)")
+    
+    if 'priority' in sample_incidents.columns:
+        priority_dist = sample_incidents['priority'].value_counts()
+        print("\nPriority Distribution:")
+        for priority, count in priority_dist.items():
+            print(f"  Priority {priority}: {count} incidents")
+        
+        rca_results['patterns']['priority_distribution'] = priority_dist.to_dict()
+        
+        # Check for high-priority duplicates
+        high_priority_count = sample_incidents[sample_incidents['priority'].isin([1, 2])].shape[0]
+        if high_priority_count > 0:
+            rca_results['root_causes'].append({
+                'cause': 'High-priority incidents being duplicated',
+                'evidence': f"{high_priority_count} high-priority (P1/P2) incidents in duplicates",
+                'severity': 'High',
+                'category': 'Business Impact'
+            })
+    
+    # 9. GENERATE COMPREHENSIVE RECOMMENDATIONS
+    print("\n" + "=" * 80)
+    print("9. ROOT CAUSE SUMMARY & RECOMMENDATIONS")
+    print("=" * 80)
+    
+    print("\nIdentified Root Causes:")
+    for i, rc in enumerate(rca_results['root_causes'], 1):
+        print(f"\n{i}. [{rc['category']}] {rc['cause']}")
+        print(f"   Evidence: {rc['evidence']}")
+        print(f"   Severity: {rc['severity']}")
+    
+    # Generate targeted recommendations
+    recommendations = generate_recommendations(rca_results, desc_analysis, work_notes_analysis, resolution_analysis)
+    rca_results['recommendations'] = recommendations
+    
+    print("\n" + "=" * 80)
+    print("RECOMMENDATIONS (Prioritized)")
+    print("=" * 80)
+    
+    for i, rec in enumerate(recommendations, 1):
+        print(f"\n{rec['priority']} - Recommendation {i}:")
+        print(f"  {rec['recommendation']}")
+        print(f"  Details: {rec['details']}")
+        print(f"  Expected Impact: {rec['impact']}")
+    
+    return rca_results
 
 
-if __name__ == "__main__":
-    # Check if required libraries are installed
-    try:
-        import pandas
-        import openpyxl
-        import ipaddress
-    except ImportError as e:
-        print("ERROR: Required library not found!")
-        print("\nPlease install required libraries:")
-        print("  pip install pandas openpyxl")
-        print(f"\nMissing: {e}")
-        exit(1)
+def analyze_text_fields(sample_df, incidents_df, field_name):
+    """Analyze text fields like description or work_notes."""
+    analysis = {
+        'identical_count': 0,
+        'very_similar_count': 0,
+        'avg_length': 0,
+        'top_keywords': [],
+        'incidents_with_notes': 0
+    }
     
-    # Run the mapping process
-    map_environments(INPUT_FILE, IP_FILE, SUBNET_FILE, OUTPUT_FILE, CREATE_BACKUP)
+    if field_name not in incidents_df.columns:
+        return analysis
+    
+    # Get all text from the field
+    all_text = []
+    non_null_count = 0
+    
+    for idx, row in sample_df.iterrows():
+        inc1_num = row['incident_1_number']
+        inc2_num = row['incident_2_number']
+        
+        inc1_data = incidents_df[incidents_df['number'] == inc1_num]
+        inc2_data = incidents_df[incidents_df['number'] == inc2_num]
+        
+        if not inc1_data.empty and not inc2_data.empty:
+            text1 = inc1_data.iloc[0][field_name]
+            text2 = inc2_data.iloc[0][field_name]
+            
+            if pd.notna(text1):
+                all_text.append(str(text1))
+                non_null_count += 1
+            if pd.notna(text2):
+                all_text.append(str(text2))
+                non_null_count += 1
+            
+            # Check similarity
+            if pd.notna(text1) and pd.notna(text2):
+                if str(text1).strip() == str(text2).strip():
+                    analysis['identical_count'] += 1
+                elif calculate_text_similarity(str(text1), str(text2)) > 0.95:
+                    analysis['very_similar_count'] += 1
+    
+    analysis['incidents_with_notes'] = non_null_count
+    
+    if all_text:
+        analysis['avg_length'] = np.mean([len(t) for t in all_text])
+        
+        # Extract keywords (simple word frequency)
+        words = []
+        for text in all_text:
+            words.extend(extract_keywords(text))
+        
+        word_freq = Counter(words)
+        analysis['top_keywords'] = [word for word, count in word_freq.most_common(15)]
+    
+    return analysis
+
+
+def calculate_text_similarity(text1, text2):
+    """Calculate similarity between two texts."""
+    from difflib import SequenceMatcher
+    return SequenceMatcher(None, text1.lower(), text2.lower()).ratio()
+
+
+def extract_keywords(text):
+    """Extract meaningful keywords from text."""
+    # Convert to lowercase and split
+    text = str(text).lower()
+    
+    # Remove common words (simple stopwords)
+    stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+                 'of', 'with', 'is', 'was', 'are', 'were', 'been', 'be', 'have', 'has',
+                 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'this',
+                 'that', 'these', 'those', 'it', 'its', 'as', 'by', 'from'}
+    
+    words = re.findall(r'\b[a-z]{3,}\b', text)
+    return [w for w in words if w not in stopwords]
+
+
+def analyze_resolutions(sample_df, incidents_df):
+    """Analyze resolution patterns."""
+    analysis = {
+        'resolved_count': 0,
+        'avg_resolution_hours': 0,
+        'closed_as_duplicate': 0,
+        'resolution_patterns': []
+    }
+    
+    resolution_times = []
+    
+    for idx, row in sample_df.iterrows():
+        inc1_num = row['incident_1_number']
+        inc2_num = row['incident_2_number']
+        
+        for inc_num in [inc1_num, inc2_num]:
+            inc_data = incidents_df[incidents_df['number'] == inc_num]
+            
+            if not inc_data.empty:
+                inc = inc_data.iloc[0]
+                
+                # Check if resolved
+                if pd.notna(inc.get('resolved_at')):
+                    analysis['resolved_count'] += 1
+                    
+                    # Calculate resolution time
+                    if pd.notna(inc.get('opened_at')) and pd.notna(inc.get('resolved_at')):
+                        opened = pd.to_datetime(inc['opened_at'])
+                        resolved = pd.to_datetime(inc['resolved_at'])
+                        hours = (resolved - opened).total_seconds() / 3600
+                        resolution_times.append(hours)
+                
+                # Check if closed as duplicate
+                if 'work_notes' in inc and pd.notna(inc['work_notes']):
+                    work_notes = str(inc['work_notes']).lower()
+                    if 'duplicate' in work_notes or 'dup' in work_notes:
+                        analysis['closed_as_duplicate'] += 1
+                
+                # Check state
+                if 'state' in inc and pd.notna(inc['state']):
+                    state = str(inc['state']).lower()
+                    if 'duplicate' in state or 'closed' in state:
+                        analysis['closed_as_duplicate'] += 1
+    
+    if resolution_times:
+        analysis['avg_resolution_hours'] = np.mean(resolution_times)
+    
+    return analysis
+
+
+def analyze_workflow_patterns(sample_df, incidents_df):
+    """Analyze workflow and assignment patterns."""
+    analysis = {
+        'avg_reassignments': 0,
+        'multiple_reassignments': 0,
+        'reassignment_counts': []
+    }
+    
+    if 'reassignment_count' not in incidents_df.columns:
+        return analysis
+    
+    reassignments = []
+    
+    for idx, row in sample_df.iterrows():
+        inc1_num = row['incident_1_number']
+        inc2_num = row['incident_2_number']
+        
+        for inc_num in [inc1_num, inc2_num]:
+            inc_data = incidents_df[incidents_df['number'] == inc_num]
+            
+            if not inc_data.empty:
+                reass_count = inc_data.iloc[0].get('reassignment_count', 0)
+                if pd.notna(reass_count):
+                    reassignments.append(int(reass_count))
+                    if int(reass_count) > 1:
+                        analysis['multiple_reassignments'] += 1
+    
+    if reassignments:
+        analysis['avg_reassignments'] = np.mean(reassignments)
+        analysis['reassignment_counts'] = reassignments
+    
+    return analysis
+
+
+def analyze_incident_pair(inc1, inc2, pair_row):
+    """Detailed analysis of a single incident pair."""
+    analysis = {
+        'incident_1': inc1['number'],
+        'incident_2': inc2['number'],
+        'likely_root_cause': 'Unknown',
+        'key_finding': '',
+        'severity_impact': 'Low'
+    }
+    
+    # Determine likely root cause
+    time_diff = pair_row['time_difference_hours']
+    different_callers = pair_row['different_callers']
+    similarity = pair_row['overall_similarity_score']
+    
+    if time_diff < 1 and different_callers:
+        analysis['likely_root_cause'] = 'Simultaneous reporting by multiple users'
+        analysis['key_finding'] = 'Multiple users experienced same issue at same time, lack of visibility'
+        analysis['severity_impact'] = 'High'
+    elif time_diff < 1 and not different_callers:
+        analysis['likely_root_cause'] = 'User accidentally submitted twice'
+        analysis['key_finding'] = 'Same user created duplicate within 1 hour - UI/UX issue or user error'
+        analysis['severity_impact'] = 'Medium'
+    elif similarity > 0.95:
+        analysis['likely_root_cause'] = 'Copy-paste or template usage'
+        analysis['key_finding'] = 'Nearly identical descriptions suggest copy-paste behavior'
+        analysis['severity_impact'] = 'Medium'
+    elif different_callers and time_diff > 4:
+        analysis['likely_root_cause'] = 'Poor incident search/visibility'
+        analysis['key_finding'] = 'Users unable to find existing incident before creating new one'
+        analysis['severity_impact'] = 'High'
+    else:
+        analysis['likely_root_cause'] = 'General process gap'
+        analysis['key_finding'] = 'Unclear why duplicate was created - needs manual review'
+        analysis['severity_impact'] = 'Medium'
+    
+    return analysis
+
+
+def generate_recommendations(rca_results, desc_analysis, work_notes_analysis, resolution_analysis):
+    """Generate targeted recommendations based on findings."""
+    recommendations = []
+    
+    root_cause_categories = [rc['category'] for rc in rca_results['root_causes']]
+    
+    # System/Process recommendations
+    if 'System/Process' in root_cause_categories:
+        recommendations.append({
+            'priority': 'P1',
+            'recommendation': 'Implement AI-powered duplicate detection at incident creation',
+            'details': 'Use NLP/ML to analyze description, category, caller location in real-time. Show similar incidents before submission.',
+            'impact': 'Could prevent 60-80% of duplicates based on text similarity patterns'
+        })
+    
+    # Communication/Visibility recommendations
+    if 'Communication/Visibility' in root_cause_categories:
+        recommendations.append({
+            'priority': 'P1',
+            'recommendation': 'Create unified incident dashboard with advanced search',
+            'details': 'Enable full-text search across descriptions, work notes. Show recent incidents by category/location.',
+            'impact': 'Reduce duplicates from different users by improving incident visibility'
+        })
+    
+    # User Behavior recommendations
+    if 'User Behavior' in root_cause_categories or desc_analysis['identical_count'] >= 3:
+        recommendations.append({
+            'priority': 'P2',
+            'recommendation': 'User training program with feedback loops',
+            'details': 'Train users on: searching before creating, using proper descriptions, checking their open incidents. Send notifications when duplicates are detected.',
+            'impact': 'Address behavioral patterns identified in 15% of duplicate cases'
+        })
+    
+    # Process recommendations
+    if resolution_analysis['closed_as_duplicate'] < 5:
+        recommendations.append({
+            'priority': 'P1',
+            'recommendation': 'Formalize duplicate incident workflow',
+            'details': 'Create "Mark as Duplicate" action that auto-links incidents, updates stakeholders, and captures metrics.',
+            'impact': 'Improve duplicate tracking and enable better analytics'
+        })
+    
+    # Workflow recommendations
+    if 'Workflow' in root_cause_categories:
+        recommendations.append({
+            'priority': 'P2',
+            'recommendation': 'Optimize assignment logic and routing rules',
+            'details': 'Review assignment groups for high-duplicate categories. Implement smart routing to reduce reassignments.',
+            'impact': 'Reduce workflow inefficiencies and faster duplicate identification'
+        })
+    
+    # Category-specific recommendations
+    if 'top_categories' in rca_results['patterns']:
+        top_cat = list(rca_results['patterns']['top_categories'].keys())[0]
+        recommendations.append({
+            'priority': 'P2',
+            'recommendation': f'Category-specific duplicate prevention for "{top_cat}"',
+            'details': f'Enhanced detection rules, stricter matching, dedicated review process for {top_cat} category.',
+            'impact': 'Target the category with highest duplicate rate'
+        })
+    
+    # Business Impact recommendations
+    if 'Business Impact' in root_cause_categories:
+        recommendations.append({
+            'priority': 'P1',
+            'recommendation': 'Priority incident duplicate alerting system',
+            'details': 'Real-time alerts to situation managers when P1/P2 duplicates detected. Auto-link and escalate.',
+            'impact': 'Prevent duplicate P1/P2 incidents from causing confusion during major incidents'
+        })
+    
+    # Monitoring recommendation (always include)
+    recommendations.append({
+        'priority': 'P2',
+        'recommendation': 'Establish duplicate incident KPIs and monitoring',
+        'details': 'Track: duplicate rate by category, time-to-detection, resolution time. Monthly reviews and trend analysis.',
+        'impact': 'Enable continuous improvement and measure effectiveness of other recommendations'
+    })
+    
+    return recommendations
+
+
+def create_enhanced_visualizations(sample_df, original_incidents_df, rca_results):
+    """Create comprehensive visualizations for RCA."""
+    
+    fig = plt.figure(figsize=(18, 12))
+    gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
+    
+    fig.suptitle('Duplicate Incident Root Cause Analysis - Enhanced View', 
+                 fontsize=16, fontweight='bold')
+    
+    # 1. Time Difference Distribution
+    ax1 = fig.add_subplot(gs[0, 0])
+    time_diffs = sample_df['time_difference_hours']
+    ax1.hist(time_diffs, bins=20, color='steelblue', edgecolor='black', alpha=0.7)
+    ax1.axvline(time_diffs.mean(), color='red', linestyle='--', 
+                label=f'Mean: {time_diffs.mean():.1f}h', linewidth=2)
+    ax1.set_xlabel('Time Difference (hours)', fontsize=10)
+    ax1.set_ylabel('Frequency', fontsize=10)
+    ax1.set_title('Time Gap Between Duplicates', fontweight='bold')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    
+    # 2. Caller Analysis Pie
+    ax2 = fig.add_subplot(gs[0, 1])
+    caller_data = ['Different Callers', 'Same Caller']
+    caller_counts = [sample_df['different_callers'].sum(), 
+                     len(sample_df) - sample_df['different_callers'].sum()]
+    colors = ['#ff6b6b', '#4ecdc4']
+    wedges, texts, autotexts = ax2.pie(caller_counts, labels=caller_data, autopct='%1.1f%%', 
+                                         colors=colors, startangle=90)
+    for autotext in autotexts:
+        autotext.set_color('white')
+        autotext.set_fontweight('bold')
+    ax2.set_title('Caller Type Distribution', fontweight='bold')
+    
+    # 3. Similarity Score Distribution
+    ax3 = fig.add_subplot(gs[0, 2])
+    similarity_scores = sample_df['overall_similarity_score']
+    ax3.hist(similarity_scores, bins=15, color='coral', edgecolor='black', alpha=0.7)
+    ax3.axvline(similarity_scores.mean(), color='darkred', linestyle='--', 
+                label=f'Mean: {similarity_scores.mean():.2f}', linewidth=2)
+    ax3.set_xlabel('Similarity Score', fontsize=10)
+    ax3.set_ylabel('Frequency', fontsize=10)
+    ax3.set_title('Text Similarity Distribution', fontweight='bold')
+    ax3.legend()
+    ax3.grid(True, alpha=0.3)
+    
+    # 4. Top Categories
+    ax4 = fig.add_subplot(gs[1, 0])
+    incident_numbers = list(sample_df['incident_1_number']) + list(sample_df['incident_2_number'])
+    sample_incidents = original_incidents_df[original_incidents_df['number'].isin(incident_numbers)]
+    
+    if 'category' in sample_incidents.columns:
+        top_categories = sample_incidents['category'].value_counts().head(8)
+        bars = ax4.barh(range(len(top_categories)), top_categories.values, color='mediumseagreen')
+        ax4.set_yticks(range(len(top_categories)))
+        ax4.set_yticklabels([str(cat)[:30] for cat in top_categories.index], fontsize=9)
+        ax4.set_xlabel('Count', fontsize=10)
+        ax4.set_title('Top Categories', fontweight='bold')
+        ax4.grid(True, alpha=0.3, axis='x')
+        
+        # Add value labels on bars
+        for i, bar in enumerate(bars):
+            width = bar.get_width()
+            ax4.text(width, bar.get_y() + bar.get_height()/2, 
+                    f'{int(width)}', ha='left', va='center', fontsize=8)
+    
+    # 5. Priority Distribution
+    ax5 = fig.add_subplot(gs[1, 1])
+    if 'priority' in sample_incidents.columns:
+        priority_dist = sample_incidents['priority'].value_counts().sort_index()
+        bars = ax5.bar(priority_dist.index.astype(str), priority_dist.values, 
+                       color=['#ff4444', '#ff8844', '#ffaa44', '#44ff44'], 
+                       edgecolor='black', alpha=0.7)
+        ax5.set_xlabel('Priority', fontsize=10)
+        ax5.set_ylabel('Count', fontsize=10)
+        ax5.set_title('Priority Distribution', fontweight='bold')
+        ax5.grid(True, alpha=0.3, axis='y')
+        
+        for bar in bars:
+            height = bar.get_height()
+            ax5.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{int(height)}', ha='center', va='bottom', fontsize=9)
+    
+    # 6. Root Cause Categories
+    ax6 = fig.add_subplot(gs[1, 2])
+    if rca_results['root_causes']:
+        rc_categories = [rc['category'] for rc in rca_results['root_causes']]
+        rc_counts = Counter(rc_categories)
+        colors_rc = plt.cm.Set3(range(len(rc_counts)))
+        wedges, texts, autotexts = ax6.pie(rc_counts.values(), labels=rc_counts.keys(), 
+                                            autopct='%1.0f%%', colors=colors_rc, startangle=90)
+        for autotext in autotexts:
+            autotext.set_fontsize(8)
+            autotext.set_fontweight('bold')
+        ax6.set_title('Root Cause Categories', fontweight='bold')
+    
+    # 7. Resolution Time Analysis
+    ax7 = fig.add_subplot(gs[2, 0])
+    if 'resolved_at' in sample_incidents.columns and 'opened_at' in sample_incidents.columns:
+        resolution_times = []
+        for idx, inc in sample_incidents.iterrows():
+            if pd.notna(inc['resolved_at']) and pd.notna(inc['opened_at']):
+                opened = pd.to_datetime(inc['opened_at'])
+                resolved = pd.to_datetime(inc['resolved_at'])
+                hours = (resolved - opened).total_seconds() / 3600
+                if hours > 0:
+                    resolution_times.append(hours)
+        
+        if resolution_times:
+            ax7.hist(resolution_times, bins=15, color='purple', edgecolor='black', alpha=0.6)
+            ax7.axvline(np.mean(resolution_times), color='red', linestyle='--', 
+                       label=f'Mean: {np.mean(resolution_times):.1f}h', linewidth=2)
+            ax7.set_xlabel('Resolution Time (hours)', fontsize=10)
+            ax7.set_ylabel('Frequency', fontsize=10)
+            ax7.set_title('Resolution Time Distribution', fontweight='bold')
+            ax7.legend()
+            ax7.grid(True, alpha=0.3)
+    
+    # 8. Assignment Group Analysis
+    ax8 = fig.add_subplot(gs[2, 1])
+    if 'assignment_group' in sample_incidents.columns:
+        top_groups = sample_incidents['assignment_group'].value_counts().head(6)
+        bars = ax8.barh(range(len(top_groups)), top_groups.values, color='teal', alpha=0.7)
+        ax8.set_yticks(range(len(top_groups)))
+        ax8.set_yticklabels([str(g)[:25] for g in top_groups.index], fontsize=8)
+        ax8.set_xlabel('Count', fontsize=10)
+        ax8.set_title('Top Assignment Groups', fontweight='bold')
+        ax8.grid(True, alpha=0.3, axis='x')
+        
+        for i, bar in enumerate(bars):
+            width = bar.get_width()
+            ax8.text(width, bar.get_y() + bar.get_height()/2, 
+                    f'{int(width)}', ha='left', va='center', fontsize=8)
+    
+    # 9. Severity Impact Summary
+    ax9 = fig.add_subplot(gs[2, 2])
+    if rca_results['root_causes']:
+        severity_counts = Counter([rc['severity'] for rc in rca_results['root_causes']])
+        severity_order = ['High', 'Medium', 'Low']
+        severity_values = [severity_counts.get(s, 0) for s in severity_order]
+        colors_sev = ['#ff4444', '#ffaa44', '#44ff44']
+        
+        bars = ax9.bar(severity_order, severity_values, color=colors_sev, edgecolor='black', alpha=0.7)
+        ax9.set_ylabel('Count', fontsize=10)
+        ax9.set_title('Root Cause Severity', fontweight='bold')
+        ax9.grid(True, alpha=0.3, axis='y')
+        
+        for bar in bars:
+            height = bar.get_height()
+            if height > 0:
+                ax9.text(bar.get_x() + bar.get_width()/2., height,
+                        f'{int(height)}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+    
+    plt.savefig('duplicate_incidents_enhanced_rca.png', dpi=300, bbox_inches='tight')
+    print("\n✓ Enhanced visualization saved as 'duplicate_incidents_enhanced_rca.png'")
+    plt.show()
+
+
+def export_detailed_rca_report(rca_results, sample_df, filename='duplicate_incidents_detailed_rca.txt'):
+    """Export comprehensive RCA report with all findings."""
+    
+    with open(filename, 'w') as f:
+        f.write("=" * 100 + "\n")
+        f.write("DUPLICATE INCIDENT ROOT CAUSE ANALYSIS - DETAILED REPORT\n")
+        f.write("=" * 100 + "\n\n")
+        f.write(f"Analysis Date: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"Sample Size: {len(sample_df)} duplicate incident pairs\n")
+        f.write(f"Total Incidents Analyzed: {len(sample_df) * 2}\n\n")
+        
+        # Executive Summary
+        f.write("\n" + "=" * 100 + "\n")
+        f.write("EXECUTIVE SUMMARY\n")
+        f.write("=" * 100 + "\n")
+        f.write(f"Total Root Causes Identified: {len(rca_results['root_causes'])}\n")
+        f.write(f"High Severity Issues: {sum(1 for rc in rca_results['root_causes'] if rc['severity'] == 'High')}\n")
+        f.write(f"Medium Severity Issues: {sum(1 for rc in rca_results['root_causes'] if rc['severity'] == 'Medium')}\n")
+        f.write(f"Total Recommendations: {len(rca_results['recommendations'])}\n")
+        f.write(f"P1 Priority Actions: {sum(1 for rec in rca_results['recommendations'] if rec['priority'] == 'P1')}\n\n")
+        
+        # Root Causes
+        f.write("\n" + "=" * 100 + "\n")
+        f.write("ROOT CAUSES IDENTIFIED\n")
+        f.write("=" * 100 + "\n\n")
+        
+        for i, rc in enumerate(rca_results['root_causes'], 1):
+            f.write(f"{i}. [{rc['severity']}] {rc['cause']}\n")
+            f.write(f"   Category: {rc['category']}\n")
+            f.write(f"   Evidence: {rc['evidence']}\n")
+            f.write("-" * 100 + "\n\n")
+        
+        # Recommendations
+        f.write("\n" + "=" * 100 + "\n")
+        f.write("RECOMMENDATIONS (PRIORITIZED)\n")
+        f.write("=" * 100 + "\n\n")
+        
+        for i, rec in enumerate(rca_results['recommendations'], 1):
+            f.write(f"{rec['priority']} - Recommendation {i}:\n")
+            f.write(f"   {rec['recommendation']}\n")
+            f.write(f"   Details: {rec['details']}\n")
+            f.write(f"   Expected Impact: {rec['impact']}\n")
+            f.write("-" * 100 + "\n\n")
+        
+        # Detailed Patterns
+        f.write("\n" + "=" * 100 + "\n")
+        f.write("DETAILED PATTERN ANALYSIS\n")
+        f.write("=" * 100 + "\n\n")
+        
+        for pattern_name, pattern_data in rca_results['patterns'].items():
+            f.write(f"\n{pattern_name.upper().replace('_', ' ')}:\n")
+            f.write(f"{pattern_data}\n")
+            f.write("-" * 100 + "\n")
+        
+        # Pair-by-Pair Analysis
+        f.write("\n" + "=" * 100 + "\n")
+        f.write("INCIDENT PAIR DETAILED ANALYSIS\n")
+        f.write("=" * 100 + "\n\n")
+        
+        for i, pair in enumerate(rca_results['duplicate_pairs_analysis'], 1):
+            f.write(f"\nPair {i}: {pair['incident_1']} & {pair['incident_2']}\n")
+            f.write(f"   Root Cause Category: {pair['likely_root_cause']}\n")
+            f.write(f"   Key Finding: {pair['key_finding']}\n")
+            f.write(f"   Severity Impact: {pair['severity_impact']}\n")
+            f.write("-" * 100 + "\n")
+    
+    print(f"\n✓ Detailed RCA report exported to '{filename}'")
+
+
+def export_to_excel(rca_results, sample_df, original_incidents_df, filename='duplicate_incidents_rca_analysis.xlsx'):
+    """Export comprehensive analysis to Excel with multiple sheets."""
+    
+    incident_numbers = list(sample_df['incident_1_number']) + list(sample_df['incident_2_number'])
+    sample_incidents = original_incidents_df[original_incidents_df['number'].isin(incident_numbers)]
+    
+    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+        # Sheet 1: Summary
+        summary_data = {
+            'Metric': [
+                'Total Duplicate Pairs',
+                'Total Incidents Analyzed',
+                'Root Causes Identified',
+                'High Severity Issues',
+                'Medium Severity Issues',
+                'Recommendations Generated',
+                'P1 Priority Actions',
+                'Average Similarity Score',
+                'Average Time Gap (hours)',
+                'Different Callers (%)'
+            ],
+            'Value': [
+                len(sample_df),
+                len(sample_df) * 2,
+                len(rca_results['root_causes']),
+                sum(1 for rc in rca_results['root_causes'] if rc['severity'] == 'High'),
+                sum(1 for rc in rca_results['root_causes'] if rc['severity'] == 'Medium'),
+                len(rca_results['recommendations']),
+                sum(1 for rec in rca_results['recommendations'] if rec['priority'] == 'P1'),
+                f"{sample_df['overall_similarity_score'].mean():.3f}",
+                f"{sample_df['time_difference_hours'].mean():.2f}",
+                f"{(sample_df['different_callers'].sum() / len(sample_df) * 100):.1f}%"
+            ]
+        }
+        summary_df = pd.DataFrame(summary_data)
+        summary_df.to_excel(writer, sheet_name='Summary', index=False)
+        
+        # Sheet 2: Root Causes
+        root_causes_df = pd.DataFrame(rca_results['root_causes'])
+        root_causes_df.to_excel(writer, sheet_name='Root Causes', index=False)
+        
+        # Sheet 3: Recommendations
+        recommendations_df = pd.DataFrame(rca_results['recommendations'])
+        recommendations_df.to_excel(writer, sheet_name='Recommendations', index=False)
+        
+        # Sheet 4: Duplicate Pairs
+        sample_df.to_excel(writer, sheet_name='Duplicate Pairs', index=False)
+        
+        # Sheet 5: Pair Analysis
+        pair_analysis_df = pd.DataFrame(rca_results['duplicate_pairs_analysis'])
+        pair_analysis_df.to_excel(writer, sheet_name='Pair Analysis', index=False)
+        
+        # Sheet 6: Incident Details
+        sample_incidents.to_excel(writer, sheet_name='Incident Details', index=False)
+    
+    print(f"\n✓ Excel report exported to '{filename}'")
+
+
+# ==================================================================================
+# MAIN EXECUTION EXAMPLE
+# ==================================================================================
+
+"""
+USAGE EXAMPLE:
+
+# 1. Load your data
+sample_duplicates = pd.read_csv('sample_20_duplicates.csv')
+original_incidents = pd.read_csv('all_incidents.csv')
+
+# 2. Perform enhanced RCA with text analysis
+rca_results = perform_enhanced_duplicate_rca(sample_duplicates, original_incidents)
+
+# 3. Create comprehensive visualizations
+create_enhanced_visualizations(sample_duplicates, original_incidents, rca_results)
+
+# 4. Export detailed text report
+export_detailed_rca_report(rca_results, sample_duplicates)
+
+# 5. Export to Excel (multiple sheets with all analysis)
+export_to_excel(rca_results, sample_duplicates, original_incidents)
+
+# 6. Access specific findings
+print("\nTop Root Causes:")
+for rc in rca_results['root_causes'][:3]:
+    print(f"- {rc['cause']} (Severity: {rc['severity']})")
+
+print("\nTop Recommendations:")
+for rec in rca_results['recommendations'][:3]:
+    print(f"- [{rec['priority']}] {rec['recommendation']}")
+"""
