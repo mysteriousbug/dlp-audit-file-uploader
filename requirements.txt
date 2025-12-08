@@ -1,22 +1,5 @@
-P-04 | Access Management | Access management ensures that database access privileges are appropriately granted, monitored, and secured through proper credential vaulting.
-R-02 | Excessive or Inappropriate Access Privileges and Inadequate Vaulting of Privileged Credentials | Excessive or inappropriate access privileges and inadequate vaulting of privileged credentials may lead to unauthorized data access, security breaches, and compliance violations.
-CO4.0 | Database Access and Credential Management | "The Database Security team (WHO) defines, reviews, and maintains access matrices and ensures privileged credentials are vaulted (WHAT) on a periodic basis (WHEN) to ensure appropriate access controls and secure credential storage are maintained (WHY).
-Control attributes:
-Defined and documented access matrix requirements
-Regular access matrix review and validation
-Privileged credential vaulting configuration and monitoring
-Access request approval workflow validation"
-Related Key Questions:
-Is the access matrix properly defined and regularly reviewed?
-Are all privileged credentials stored in the vault?
-Are access approvers authorized and appropriate for their roles?
-CDE Required: Yes
-COE Required: Yes
-CDE or COE DA Required: Yes
-Control Design Effectiveness (CDE) - Test Procedures:
-Verify that the access matrix is properly defined for one database (test-of-one sample) and validate that the access matrix undergoes regular documented reviews
-Verify that privileged credential vaulting requirements and configurations are properly defined and documented
-Control Operating Effectiveness (COE) - Test Procedures:
-Access Matrix Alignment (All 4 databases - DA on complete population) - Map each user's role to the access matrix for all database accounts to verify alignment
-Privileged Credential Vaulting Coverage Validation - Verify that all privileged credentials are stored in the vault with no gaps in coverage
-Verify that all groups who can request database access are legitimate, authorized, and appropriate based on their roles (ServiceNow - approver details
+Access Matrix Alignment (All 4 databases - DA on complete population)
+1a. Test if majority of users are PIDs
+1b. Check if all defined PIDs are actually necessary (identify different PIDs with same privileges, accounts in regular use vs locked/unused for extended periods, etc.)
+Privileged Credential Vaulting Coverage Validation - Gap analysis to identify any privileged credentials not stored in the vault
+Verify that all groups who can request database access are legitimate, authorized, and appropriate based on their roles (ServiceNow - approver details analysis)
