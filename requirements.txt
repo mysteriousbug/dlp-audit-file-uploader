@@ -1,163 +1,32 @@
-import pandas as pd
-import sys
+i want you to look at this format:
+Process Ref.	Process Title	Process Description	Risk Ref	Risk Title	Risk Description	Control Ref.	Control Title	Control Description	Related Key Questions	CDE Required	COE Required	CDE or COE DA Required	Control Design Effectiveness (CDE) - Test Procedures	Control Operating Effectiveness (COE) - Test Procedures	"Data Analytics (DA)
+Test Procedure"	Audit Team Member
 
-# Define mandatory fields for each state
-MANDATORY_FIELDS = {
-    'New': ['number', 'state', 'caller', 'category', 'subcategory', 'service', 
-            'service_offering', 'channel', 'external_client_impact', 'impact', 
-            'urgency', 'assignment_group', 'short_description', 'description', 
-            'business_impact', 'work_notes', 'situation_manager'],
-    'In Progress': ['assignment_group', 'assigned_to'],
-    'Resolved': ['resolution_code', 'resolution_notes', 'business_impact', 
-                 'configuration_item'],
-    'Open': ['number', 'incident', 'short_description', 'state', 'priority', 
-             'assignment_group'],
-    'Working in Progress': ['description'],
-    'Pending': ['work_notes'],
-    'Closed': ['resolution_notes']
-}
+also note that the output should look like this (this is someone else's work, but note the format):
+P-03	Database Backup and Restore	Database backup and restoration ensures data is securely copied, monitored and recoverable.	R-01	Inadequate database backup and restoration	Inadequate database backup and restoration may lead to prolonged downtime, data loss, and operational disruption.	CO3.0	Backup and Restore Management	"The Database team (WHO) configures and monitors databases backups and performs backup restoration (WHAT) on a periodic basis (WHEN) to ensure data integrity, availability and recoverability within defined RPO/RTO requirements (WHY).
+Control attributes:
+1. Defined backup and restoration requirements
+2. Backup config and validation
+3. Backup monitoring, alerting and remediation
+4. Restoration results and remediation"
 
-def normalize_column_name(col_name):
-    """Normalize column names to lowercase with underscores"""
-    return str(col_name).lower().strip().replace(' ', '_')
 
-def validate_incidents(input_file, output_file='incident_anomalies.xlsx'):
-    """
-    Validate incident data for mandatory fields based on state
-    
-    Parameters:
-    input_file (str): Path to input Excel/CSV file
-    output_file (str): Path to output anomaly file (default: incident_anomalies.xlsx)
-    """
-    
-    try:
-        # Read the input file
-        if input_file.endswith('.csv'):
-            df = pd.read_csv(input_file)
-        else:
-            df = pd.read_excel(input_file)
-        
-        print(f"Loaded {len(df)} rows from {input_file}")
-        
-        # Create a mapping of normalized column names to original names
-        col_mapping = {normalize_column_name(col): col for col in df.columns}
-        normalized_cols = list(col_mapping.keys())
-        
-        # Check if state column exists
-        if 'state' not in normalized_cols:
-            print("ERROR: 'State' column not found in the file")
-            print(f"Available columns: {list(df.columns)}")
-            return
-        
-        state_col = col_mapping['state']
-        
-        # Lists to store results
-        anomalies = []
-        
-        # Process each row
-        for idx, row in df.iterrows():
-            state = row[state_col]
-            
-            # Check if state is empty
-            if pd.isna(state) or str(state).strip() == '':
-                anomaly_row = row.copy()
-                anomaly_row['_missing_fields'] = 'State field is empty'
-                anomaly_row['_row_number'] = idx + 2  # +2 for Excel row (header + 1-based)
-                anomalies.append(anomaly_row)
-                continue
-            
-            # Get required fields for this state
-            required_fields = MANDATORY_FIELDS.get(state)
-            
-            if required_fields is None:
-                anomaly_row = row.copy()
-                anomaly_row['_missing_fields'] = f'Unknown state: {state}'
-                anomaly_row['_row_number'] = idx + 2
-                anomalies.append(anomaly_row)
-                continue
-            
-            # Check for missing fields
-            missing_fields = []
-            
-            for field in required_fields:
-                if field not in normalized_cols:
-                    # Column doesn't exist in the file
-                    missing_fields.append(field)
-                else:
-                    # Column exists, check if value is empty
-                    actual_col = col_mapping[field]
-                    value = row[actual_col]
-                    
-                    if pd.isna(value) or str(value).strip() == '':
-                        missing_fields.append(field)
-            
-            # If there are missing fields, add to anomalies
-            if missing_fields:
-                anomaly_row = row.copy()
-                anomaly_row['_missing_fields'] = ', '.join(missing_fields)
-                anomaly_row['_row_number'] = idx + 2
-                anomalies.append(anomaly_row)
-        
-        # Create results summary
-        total_rows = len(df)
-        anomaly_count = len(anomalies)
-        valid_count = total_rows - anomaly_count
-        
-        print("\n" + "="*60)
-        print("VALIDATION RESULTS")
-        print("="*60)
-        print(f"Total Rows:       {total_rows}")
-        print(f"Valid Rows:       {valid_count}")
-        print(f"Anomalies Found:  {anomaly_count}")
-        print("="*60)
-        
-        # Save anomalies to file if any found
-        if anomalies:
-            anomaly_df = pd.DataFrame(anomalies)
-            anomaly_df.to_excel(output_file, index=False)
-            print(f"\n✓ Anomalies exported to: {output_file}")
-            print(f"\nSample of missing fields:")
-            print(anomaly_df[['_row_number', '_missing_fields']].head(10))
-        else:
-            print("\n✓ All incidents have the required mandatory fields!")
-        
-        return anomaly_count
-        
-    except FileNotFoundError:
-        print(f"ERROR: File '{input_file}' not found")
-    except Exception as e:
-        print(f"ERROR: {str(e)}")
-        import traceback
-        traceback.print_exc()
+for my process 'access management', i want to write only 1 risk and 1 control. the risk should be something like this - 'Excessive or Inappropriate Access Privileges, and vaulting of privileged credentials'
+i want these CDE's:
+1. verify that access matrix is defined properly for any one database (test-of-one sample), and access matrix is reviewed regularly
+2. one CDE for vaulting
 
-def print_state_requirements():
-    """Print all state requirements"""
-    print("\n" + "="*60)
-    print("MANDATORY FIELDS BY STATE")
-    print("="*60)
-    for state, fields in MANDATORY_FIELDS.items():
-        print(f"\n{state}:")
-        for field in fields:
-            print(f"  - {field}")
-    print("="*60)
+i want these COE's:
+1. Access Matrix Alignment (All 4 databases - DA on complete population) - Map user's role to access matrix for all database accounts
+2. Privileged Credential Vaulting Coverage Validation
+3. Verify that all groups who can request database access are legitimate, authorized, and appropriate based on their roles. (Service NOW - approver details) 
 
-if __name__ == "__main__":
-    # Usage examples
-    print("Incident Mandatory Field Validator")
-    print("="*60)
-    
-    # Show state requirements
-    print_state_requirements()
-    
-    # Check command line arguments
-    if len(sys.argv) > 1:
-        input_file = sys.argv[1]
-        output_file = sys.argv[2] if len(sys.argv) > 2 else 'incident_anomalies.xlsx'
-        validate_incidents(input_file, output_file)
-    else:
-        print("\nUSAGE:")
-        print("  python script.py <input_file> [output_file]")
-        print("\nEXAMPLES:")
-        print("  python script.py incidents.xlsx")
-        print("  python script.py incidents.csv anomalies.xlsx")
-        print("\n" + "="*60)
+i want these DA. DA is same as COE, but with more sub steps:
+1. Access Matrix Alignment(All 4 databases - DA on complete population)
+1a. Test if majority users are PIDs. 
+1b.Check if all defined PIDs are actually necessary (different PIDs with same privileges, in regular use/locked/unused for a long time, etc)
+
+2. Privileged Credential Vaulting Coverage Validation gap analysis
+
+3. Verify that all groups who can request database access are legitimate, authorized, and appropriate based on their roles. (Service NOW - approver details) 
+
