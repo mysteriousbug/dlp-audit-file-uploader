@@ -1,5 +1,44 @@
-Access Matrix Alignment (All 4 databases - DA on complete population)
-1a. Test if majority of users are PIDs
-1b. Check if all defined PIDs are actually necessary (identify different PIDs with same privileges, accounts in regular use vs locked/unused for extended periods, etc.)
-Privileged Credential Vaulting Coverage Validation - Gap analysis to identify any privileged credentials not stored in the vault
-Verify that all groups who can request database access are legitimate, authorized, and appropriate based on their roles (ServiceNow - approver details analysis)
+THis is my XML file with firewall rules. i am a part of the red team audit. Could you format the attached list of Firewall rules and perform analysis of the FW rules (e.g. source, destination, services/members etc. and which are disabled/enabled)?
+Write code in python.
+
+<rulebase>
+  <security>
+    <rules>
+      <entry name="VPN Access PL" uuid="4fab4ecc48a">
+        <to>
+          <member>RL-WAN</member>
+        </to>
+        <from>
+          <member>RL-WAN</member>
+        </from>
+        <source>
+          <member>PL</member>
+        </source>
+        <destination>
+          <member>HOST-PUBLIC_GP-198.117.204.249</member>
+        </destination>
+        <source-user>
+          <member>any</member>
+        </source-user>
+        <category>
+          <member>any</member>
+        </category>
+        <application>
+          <member>any</member>
+        </application>
+        <service>
+          <member>service-http</member>
+          <member>service-https</member>
+        </service>
+        <source-hip>
+          <member>any</member>
+        </source-hip>
+        <destination-hip>
+          <member>any</member>
+        </destination-hip>
+        <action>allow</action>
+        <log-setting>SPLUNK</log-setting>
+      </entry>
+      <entry name="VPN Access Block" uuid="53886e9cab96-a8a307995cf4">
+        <to>
+          <member>RTL-WAN</member>
