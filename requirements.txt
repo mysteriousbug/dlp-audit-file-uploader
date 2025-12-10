@@ -1,1 +1,296 @@
-mona lisa
+import xml.etree.ElementTree as ET
+from collections import defaultdict
+import json
+import csv
+import sys
+from pathlib import Path
+
+# Your XML content (sample for testing)
+xml_content = '''<rulebase>
+  <security>
+    <rules>
+      <entry name="VPN Access PL" uuid="4fab4ecc48a">
+        <to>
+          <member>RL-WAN</member>
+        </to>
+        <from>
+          <member>RL-WAN</member>
+        </from>
+        <source>
+          <member>PL</member>
+        </source>
+        <destination>
+          <member>HOST-PUBLIC_GP-198.117.204.249</member>
+        </destination>
+        <source-user>
+          <member>any</member>
+        </source-user>
+        <category>
+          <member>any</member>
+        </category>
+        <application>
+          <member>any</member>
+        </application>
+        <service>
+          <member>service-http</member>
+          <member>service-https</member>
+        </service>
+        <source-hip>
+          <member>any</member>
+        </source-hip>
+        <destination-hip>
+          <member>any</member>
+        </destination-hip>
+        <action>allow</action>
+        <log-setting>SPLUNK</log-setting>
+      </entry>
+      <entry name="VPN Access Block" uuid="53886e9cab96-a8a307995cf4">
+        <to>
+          <member>RTL-WAN</member>
+        </to>
+        <from>
+          <member>RL-WAN</member>
+        </from>
+        <source>
+          <member>any</member>
+        </source>
+        <destination>
+          <member>any</member>
+        </destination>
+        <source-user>
+          <member>any</member>
+        </source-user>
+        <category>
+          <member>any</member>
+        </category>
+        <application>
+          <member>any</member>
+        </application>
+        <service>
+          <member>any</member>
+        </service>
+        <action>deny</action>
+        <disabled>yes</disabled>
+      </entry>
+    </rules>
+  </security>
+</rulebase>'''
+
+def parse_firewall_rules(xml_string):
+    """Parse XML firewall rules and extract structured data"""
+    root = ET.fromstring(xml_string)
+    rules = []
+    
+    for entry in root.findall('.//entry'):
+        rule = {
+            'name': entry.get('name'),
+            'uuid': entry.get('uuid'),
+            'enabled': entry.find('disabled') is None or entry.find('disabled').text != 'yes',
+            'to': [m.text for m in entry.findall('.//to/member')],
+            'from': [m.text for m in entry.findall('.//from/member')],
+            'source': [m.text for m in entry.findall('.//source/member')],
+            'destination': [m.text for m in entry.findall('.//destination/member')],
+            'source_user': [m.text for m in entry.findall('.//source-user/member')],
+            'application': [m.text for m in entry.findall('.//application/member')],
+            'service': [m.text for m in entry.findall('.//service/member')],
+            'category': [m.text for m in entry.findall('.//category/member')],
+            'action': entry.find('.//action').text if entry.find('.//action') is not None else 'unknown',
+            'log_setting': entry.find('.//log-setting').text if entry.find('.//log-setting') is not None else 'none'
+        }
+        rules.append(rule)
+    
+    return rules
+
+def read_xml_file(file_path):
+    """Read XML content from a file"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"❌ Error: File '{file_path}' not found")
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ Error reading file: {e}")
+        sys.exit(1)
+
+def export_to_csv(rules, output_file='firewall_rules.csv'):
+    """Export firewall rules to CSV file"""
+    try:
+        with open(output_file, 'w', newline='', encoding='utf-8') as f:
+            fieldnames = [
+                'rule_number', 'name', 'uuid', 'enabled', 'action', 
+                'from_zone', 'to_zone', 'source', 'destination', 
+                'service', 'application', 'source_user', 'category', 'log_setting'
+            ]
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            
+            for idx, rule in enumerate(rules, 1):
+                writer.writerow({
+                    'rule_number': idx,
+                    'name': rule['name'],
+                    'uuid': rule['uuid'],
+                    'enabled': 'Yes' if rule['enabled'] else 'No',
+                    'action': rule['action'],
+                    'from_zone': '; '.join(rule['from']),
+                    'to_zone': '; '.join(rule['to']),
+                    'source': '; '.join(rule['source']),
+                    'destination': '; '.join(rule['destination']),
+                    'service': '; '.join(rule['service']),
+                    'application': '; '.join(rule['application']),
+                    'source_user': '; '.join(rule['source_user']),
+                    'category': '; '.join(rule['category']),
+                    'log_setting': rule['log_setting']
+                })
+        
+        print(f"\n✅ CSV file exported successfully: {output_file}")
+        return True
+    except Exception as e:
+        print(f"❌ Error exporting to CSV: {e}")
+        return False
+
+def analyze_rules(rules):
+    """Perform security analysis on firewall rules"""
+    analysis = {
+        'total_rules': len(rules),
+        'enabled_rules': sum(1 for r in rules if r['enabled']),
+        'disabled_rules': sum(1 for r in rules if not r['enabled']),
+        'allow_rules': sum(1 for r in rules if r['action'] == 'allow'),
+        'deny_rules': sum(1 for r in rules if r['action'] == 'deny'),
+        'security_concerns': []
+    }
+    
+    # Security analysis
+    for idx, rule in enumerate(rules, 1):
+        concerns = []
+        
+        # Check for overly permissive rules
+        if 'any' in rule['source'] and 'any' in rule['destination']:
+            concerns.append("CRITICAL: Rule allows ANY source to ANY destination")
+        
+        if 'any' in rule['service'] and rule['action'] == 'allow':
+            concerns.append("HIGH: Rule allows ANY service")
+        
+        if 'any' in rule['application'] and rule['action'] == 'allow':
+            concerns.append("MEDIUM: Rule allows ANY application")
+        
+        # Check for HTTP services (should use HTTPS)
+        if 'service-http' in rule['service'] and rule['action'] == 'allow':
+            concerns.append("MEDIUM: HTTP service allowed (unencrypted)")
+        
+        # Check if deny rules are disabled
+        if rule['action'] == 'deny' and not rule['enabled']:
+            concerns.append("WARNING: Deny rule is DISABLED - security control inactive")
+        
+        # Check for missing logging
+        if rule['log_setting'] == 'none' and rule['action'] == 'allow':
+            concerns.append("LOW: No logging configured for allow rule")
+        
+        if concerns:
+            analysis['security_concerns'].append({
+                'rule_number': idx,
+                'rule_name': rule['name'],
+                'enabled': rule['enabled'],
+                'concerns': concerns
+            })
+    
+    return analysis
+
+def format_rules_table(rules):
+    """Format rules in a readable table"""
+    print("\n" + "="*120)
+    print("FIREWALL RULES ANALYSIS")
+    print("="*120)
+    
+    for idx, rule in enumerate(rules, 1):
+        status = "✓ ENABLED" if rule['enabled'] else "✗ DISABLED"
+        action_display = f"[{rule['action'].upper()}]"
+        
+        print(f"\n{'─'*120}")
+        print(f"Rule #{idx}: {rule['name']}")
+        print(f"Status: {status} | Action: {action_display} | UUID: {rule['uuid']}")
+        print(f"{'─'*120}")
+        print(f"  From Zone:        {', '.join(rule['from'])}")
+        print(f"  To Zone:          {', '.join(rule['to'])}")
+        print(f"  Source:           {', '.join(rule['source'])}")
+        print(f"  Destination:      {', '.join(rule['destination'])}")
+        print(f"  Service:          {', '.join(rule['service'])}")
+        print(f"  Application:      {', '.join(rule['application'])}")
+        print(f"  Source User:      {', '.join(rule['source_user'])}")
+        print(f"  Log Setting:      {rule['log_setting']}")
+
+def print_analysis_summary(analysis):
+    """Print security analysis summary"""
+    print("\n" + "="*120)
+    print("SECURITY ANALYSIS SUMMARY")
+    print("="*120)
+    print(f"\nTotal Rules:      {analysis['total_rules']}")
+    print(f"Enabled Rules:    {analysis['enabled_rules']}")
+    print(f"Disabled Rules:   {analysis['disabled_rules']}")
+    print(f"Allow Rules:      {analysis['allow_rules']}")
+    print(f"Deny Rules:       {analysis['deny_rules']}")
+    
+    if analysis['security_concerns']:
+        print(f"\n⚠️  SECURITY CONCERNS FOUND: {len(analysis['security_concerns'])}")
+        print("="*120)
+        
+        for concern in analysis['security_concerns']:
+            status = "ENABLED" if concern['enabled'] else "DISABLED"
+            print(f"\n🔴 Rule #{concern['rule_number']}: {concern['rule_name']} [{status}]")
+            for c in concern['concerns']:
+                print(f"   • {c}")
+    else:
+        print("\n✅ No major security concerns detected")
+
+# Main execution
+if __name__ == "__main__":
+    print("="*120)
+    print("FIREWALL RULES ANALYZER - Red Team Security Audit")
+    print("="*120)
+    
+    # Check if XML file path is provided as command line argument
+    if len(sys.argv) > 1:
+        xml_file_path = sys.argv[1]
+        print(f"\n📁 Reading XML file: {xml_file_path}")
+        xml_data = read_xml_file(xml_file_path)
+        
+        # Optional: specify output CSV file name
+        csv_output = sys.argv[2] if len(sys.argv) > 2 else 'firewall_rules.csv'
+    else:
+        print("\n💡 Usage: python script.py <input_xml_file> [output_csv_file]")
+        print("   Example: python script.py firewall_rules.xml output.csv")
+        print("\n⚠️  No file specified, using sample XML data for demonstration\n")
+        xml_data = xml_content
+        csv_output = 'firewall_rules.csv'
+    
+    # Parse rules
+    rules = parse_firewall_rules(xml_data)
+    
+    if not rules:
+        print("❌ No firewall rules found in XML")
+        sys.exit(1)
+    
+    print(f"✅ Successfully parsed {len(rules)} firewall rules")
+    
+    # Export to CSV
+    export_to_csv(rules, csv_output)
+    
+    # Format and display rules
+    format_rules_table(rules)
+    
+    # Analyze and display security concerns
+    analysis = analyze_rules(rules)
+    print_analysis_summary(analysis)
+    
+    # Export to JSON for further processing
+    json_output = csv_output.replace('.csv', '.json')
+    try:
+        with open(json_output, 'w', encoding='utf-8') as f:
+            json.dump(rules, f, indent=2)
+        print(f"\n✅ JSON file exported successfully: {json_output}")
+    except Exception as e:
+        print(f"❌ Error exporting JSON: {e}")
+    
+    print("\n" + "="*120)
+    print("ANALYSIS COMPLETE")
+    print("="*120)
