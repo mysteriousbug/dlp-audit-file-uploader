@@ -1,28 +1,194 @@
-I need to perform this test:
-Incident Caused by Change
-Objective: To identify inconsistencies in the reporting of disruption start time in the incident ticket by validating it against the relevant ticket of the change that caused the incident.
-Scenario Testing: to validate the disruption start time recorded in the relevant change ticket against the recorded disruption start time in the incident ticket. 
+import pandas as pd
+import numpy as np
+from datetime import datetime
 
-I have these input files in .csv format. I am putting 1 record in each file to show you the format.
-1.i1_i2_i3.csv
-number	active	opened_at	short_description	caller_id	caller_id.user_name	caller_id.location	priority	state	category	subcategory	assignment_group	assigned_to	sys_updated_on	sys_updated_by	u_time_to_detect	description	business_stc	sys_created_on	resolved_at	closed_at	u_service_offering_outage_start_time	u_service_offering_outage_end_time	problem_id	u_final_impact	major_incident_state	promoted_on	business_impact	u_country	business_duration	urgency	u_external_client_impact	sys_domain	reassignment_count	work_notes	child_incidents	approval	u_situation_manager	u_rca_managed_by	reopen_count	business_service	service_offering	contact_type	u_time_to_respond
+def load_and_merge_data(i1_i2_i3_path, i4_path, i5_path, 
+                        i1_i2_i3_extra_path, i4_i5_extra_path,
+                        change_i1_path, change_i2_path, change_i3_path):
+    """
+    Load all CSV files and merge incident and change data
+    """
+    # Load incident files
+    print("Loading incident files...")
+    i1_i2_i3 = pd.read_csv(i1_i2_i3_path)
+    i4 = pd.read_csv(i4_path)
+    i5 = pd.read_csv(i5_path)
+    
+    # Load extra incident info
+    i1_i2_i3_extra = pd.read_csv(i1_i2_i3_extra_path)
+    i4_i5_extra = pd.read_csv(i4_i5_extra_path)
+    
+    # Load change files
+    print("Loading change files...")
+    change_i1 = pd.read_csv(change_i1_path)
+    change_i2 = pd.read_csv(change_i2_path)
+    change_i3 = pd.read_csv(change_i3_path)
+    
+    # Combine all incidents
+    print("Combining incident data...")
+    incidents = pd.concat([i1_i2_i3, i4, i5], ignore_index=True)
+    incidents_extra = pd.concat([i1_i2_i3_extra, i4_i5_extra], ignore_index=True)
+    
+    # Merge incidents with extra info
+    incidents_full = incidents.merge(incidents_extra, on='number', how='left')
+    
+    # Combine all changes
+    print("Combining change data...")
+    changes = pd.concat([change_i1, change_i2, change_i3], ignore_index=True)
+    
+    return incidents_full, changes
 
-2.i4.csv - same as i1_i2_i3.csv
-3.i5.csv - same as i1_i2_i3.csv
 
-4.i1_i2_i3_extra.csv
-number	impact	u_affected_country	caused_by
+def validate_disruption_times(incidents_df, changes_df):
+    """
+    Validate disruption start times between incidents and their causing changes
+    """
+    print("\nPerforming validation...")
+    
+    # Filter incidents that have a caused_by reference
+    incidents_with_cause = incidents_df[incidents_df['caused_by'].notna()].copy()
+    print(f"Found {len(incidents_with_cause)} incidents with 'caused_by' reference")
+    
+    # Merge incidents with changes on caused_by = change number
+    merged = incidents_with_cause.merge(
+        changes_df[['number', 'work_start', 'work_end', 'start_date', 'end_date', 
+                    'short_description', 'state']],
+        left_on='caused_by',
+        right_on='number',
+        how='left',
+        suffixes=('_incident', '_change')
+    )
+    
+    # Convert datetime columns to datetime objects
+    datetime_cols = {
+        'incident_disruption_start': 'u_service_offering_outage_start_time',
+        'incident_disruption_end': 'u_service_offering_outage_end_time',
+        'change_work_start': 'work_start',
+        'change_work_end': 'work_end',
+        'change_start_date': 'start_date',
+        'change_end_date': 'end_date'
+    }
+    
+    for new_col, orig_col in datetime_cols.items():
+        if orig_col in merged.columns:
+            merged[new_col] = pd.to_datetime(merged[orig_col], errors='coerce')
+    
+    # Identify inconsistencies
+    # An inconsistency occurs when:
+    # 1. Incident disruption start time doesn't match change work start time
+    # 2. There's a significant time difference (e.g., more than 1 hour)
+    
+    merged['time_difference_minutes'] = np.nan
+    merged['inconsistency_flag'] = False
+    merged['inconsistency_reason'] = ''
+    
+    for idx, row in merged.iterrows():
+        incident_start = row['incident_disruption_start']
+        change_start = row['change_work_start']
+        
+        if pd.isna(incident_start) and pd.isna(change_start):
+            merged.at[idx, 'inconsistency_reason'] = 'Both times are missing'
+            merged.at[idx, 'inconsistency_flag'] = True
+        elif pd.isna(incident_start):
+            merged.at[idx, 'inconsistency_reason'] = 'Incident disruption start time is missing'
+            merged.at[idx, 'inconsistency_flag'] = True
+        elif pd.isna(change_start):
+            merged.at[idx, 'inconsistency_reason'] = 'Change work start time is missing'
+            merged.at[idx, 'inconsistency_flag'] = True
+        else:
+            # Calculate time difference in minutes
+            time_diff = abs((incident_start - change_start).total_seconds() / 60)
+            merged.at[idx, 'time_difference_minutes'] = time_diff
+            
+            # Flag as inconsistent if difference > 60 minutes (configurable threshold)
+            if time_diff > 60:
+                merged.at[idx, 'inconsistency_flag'] = True
+                merged.at[idx, 'inconsistency_reason'] = f'Time difference: {time_diff:.0f} minutes'
+    
+    return merged
 
-5.i4_i5_extra.csv
-number	impact	u_affected_country	caused_by
 
-6.change_i1.csv
-number	active	activity_due	additional_assignee_list	approval	approval_history	approval_set	assigned_to	assignment_group	backout_plan	sys_created_on	work_start	work_end	u_backout_plan_attachment	cab_date_time	cab_recommendation	cab_required	category	u_deployment_tested	close_code	cmdb_ci	u_conflict_justification	conflict_last_run	conflict_status	description	impact	implementation_plan	justification	chg_model	on_hold	on_hold_task	on_hold_reason	u_on_hold_updated_group	outside_maintenance_schedule	phase	phase_state	test_plan	end_date	start_date	priority	production_system	reason	u_release_attestation_tool	requested_by	requested_by_date	review_comments	review_date	review_status	risk	risk_impact_analysis	u_risk_updated	risk_value	scope	business_service	service_offering	service_offering.spm_taxonomy_node	service_offering.spm_taxonomy_node.parent	business_service.spm_taxonomy_node	business_service.spm_taxonomy_node.parent	short_description	std_change_producer_version	state	u_subcategory	u_test_closure_report	type	unauthorized	u_upgrade_risk	urgency	work_notes
+def generate_report(validation_results, output_path='validation_report.csv'):
+    """
+    Generate a detailed validation report
+    """
+    # Select relevant columns for the report
+    report_columns = [
+        'number_incident', 'short_description_incident', 'caused_by',
+        'short_description_change', 'incident_disruption_start',
+        'change_work_start', 'time_difference_minutes',
+        'inconsistency_flag', 'inconsistency_reason'
+    ]
+    
+    # Filter to only include columns that exist
+    available_columns = [col for col in report_columns if col in validation_results.columns]
+    report = validation_results[available_columns].copy()
+    
+    # Sort by inconsistency flag (inconsistent first)
+    report = report.sort_values('inconsistency_flag', ascending=False)
+    
+    # Save to CSV
+    report.to_csv(output_path, index=False)
+    print(f"\nValidation report saved to: {output_path}")
+    
+    # Print summary statistics
+    total_records = len(report)
+    inconsistent_records = report['inconsistency_flag'].sum()
+    consistent_records = total_records - inconsistent_records
+    
+    print("\n" + "="*60)
+    print("VALIDATION SUMMARY")
+    print("="*60)
+    print(f"Total incidents with caused_by reference: {total_records}")
+    print(f"Consistent records: {consistent_records} ({consistent_records/total_records*100:.1f}%)")
+    print(f"Inconsistent records: {inconsistent_records} ({inconsistent_records/total_records*100:.1f}%)")
+    print("="*60)
+    
+    # Show breakdown of inconsistency reasons
+    if inconsistent_records > 0:
+        print("\nINCONSISTENCY BREAKDOWN:")
+        print("-"*60)
+        reason_counts = report[report['inconsistency_flag']]['inconsistency_reason'].value_counts()
+        for reason, count in reason_counts.items():
+            print(f"{reason}: {count}")
+    
+    return report
 
-8.change_i2.csv - same as change_i1.csv
-7.change_i3.csv - same as change_i1.csv
 
-i will have to join the entire incident table with the change table, then perform the test.
-
-
-
+# Main execution
+if __name__ == "__main__":
+    # File paths - UPDATE THESE WITH YOUR ACTUAL FILE PATHS
+    i1_i2_i3_path = 'i1_i2_i3.csv'
+    i4_path = 'i4.csv'
+    i5_path = 'i5.csv'
+    i1_i2_i3_extra_path = 'i1_i2_i3_extra.csv'
+    i4_i5_extra_path = 'i4_i5_extra.csv'
+    change_i1_path = 'change_i1.csv'
+    change_i2_path = 'change_i2.csv'
+    change_i3_path = 'change_i3.csv'
+    
+    try:
+        # Load and merge data
+        incidents, changes = load_and_merge_data(
+            i1_i2_i3_path, i4_path, i5_path,
+            i1_i2_i3_extra_path, i4_i5_extra_path,
+            change_i1_path, change_i2_path, change_i3_path
+        )
+        
+        print(f"\nTotal incidents loaded: {len(incidents)}")
+        print(f"Total changes loaded: {len(changes)}")
+        
+        # Validate disruption times
+        validation_results = validate_disruption_times(incidents, changes)
+        
+        # Generate report
+        report = generate_report(validation_results)
+        
+        print("\nValidation complete!")
+        
+    except FileNotFoundError as e:
+        print(f"Error: Could not find file - {e}")
+    except Exception as e:
+        print(f"Error during validation: {e}")
+        import traceback
+        traceback.print_exc()
