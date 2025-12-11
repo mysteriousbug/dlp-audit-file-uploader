@@ -1,18 +1,20 @@
+ncident_impact_data = []
+for impact, count in rca_results['patterns']['impact_priority']['incident_impact'].items():
+    incident_impact_data.append({
+        'Category': 'Incident Impact',
+        'Value': impact,
+        'Count': count,
+        'Percentage': round(count/len(df)*100, 1)
+    })
 
+change_impact_data = []
+for impact, count in rca_results['patterns']['impact_priority']['change_impact'].items():
+    change_impact_data.append({
+        'Category': 'Change Impact',
+        'Value': impact,
+        'Count': count,
+        'Percentage': round(count/len(df)*100, 1)
+    })
 
-
-2. Traceback (most recent call last):
-  File "c:\Users\2019778\OneDrive - Standard Chartered Bank\Documents\Downloads\work\IPM_Audit\coe\c1\c1.2\rca_positive_incidents.py", line 953, in <module>
-    export_to_excel(rca_results, df)
-    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
-  File "c:\Users\2019778\OneDrive - Standard Chartered Bank\Documents\Downloads\work\IPM_Audit\coe\c1\c1.2\rca_positive_incidents.py", line 929, in export_to_excel
-    impact_df = pd.DataFrame(impact_summary)
-  File "C:\Users\2019778\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 778, in __init__ 
-    mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy, typ=manager)
-  File "C:\Users\2019778\AppData\Roaming\Python\Python313\site-packages\pandas\core\internals\construction.py", line 503, in dict_to_mgr
-    return arrays_to_mgr(arrays, columns, index, dtype=dtype, typ=typ, consolidate=copy)
-  File "C:\Users\2019778\AppData\Roaming\Python\Python313\site-packages\pandas\core\internals\construction.py", line 114, in arrays_to_mgr
-    index = _extract_index(arrays)
-  File "C:\Users\2019778\AppData\Roaming\Python\Python313\site-packages\pandas\core\internals\construction.py", line 677, in _extract_index
-    raise ValueError("All arrays must be of the same length")
-ValueError: All arrays must be of the same length
+impact_data = incident_impact_data + change_impact_data
+impact_df = pd.DataFrame(impact_data)
