@@ -1,1 +1,271 @@
-mona
+import pandas as pd
+from datetime import datetime
+import numpy as np
+import sys
+
+def parse_datetime(date_str):
+    """Parse datetime strings with multiple formats"""
+    if pd.isna(date_str) or str(date_str).strip() == '':
+        return None
+    
+    date_str = str(date_str).strip()
+    
+    # List of possible formats
+    formats = [
+        '%d-%m-%Y %H:%M:%S',  # 14-10-2024 01:00:26
+        '%d-%m-%Y %H:%M',     # 14-10-2024 01:00
+        '%d/%m/%Y %H:%M',     # 11/10/2024 1:54
+        '%m/%d/%Y %H:%M',     # 2/8/2025 10:29
+        '%d/%m/%Y %H:%M:%S',  # potential format
+        '%m/%d/%Y %H:%M:%S',  # potential format
+    ]
+    
+    if "/" in date_str:
+        return pd.to_datetime(date_str, format=formats[2])
+    else:
+        return pd.to_datetime(date_str, format=formats[0])
+
+def format_timedelta(td):
+    """Convert timedelta to human-readable format"""
+    if pd.isna(td):
+        return 'Missing Data'
+    
+    total_seconds = int(td.total_seconds())
+    
+    if total_seconds == 0:
+        return '0 seconds'
+    
+    is_negative = total_seconds < 0
+    total_seconds = abs(total_seconds)
+    
+    days = total_seconds // 86400
+    hours = (total_seconds % 86400) // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+    
+    parts = []
+    if days > 0:
+        parts.append(f"{days}d")
+    if hours > 0:
+        parts.append(f"{hours}h")
+    if minutes > 0:
+        parts.append(f"{minutes}m")
+    if seconds > 0:
+        parts.append(f"{seconds}s")
+    
+    result = ' '.join(parts)
+    if is_negative:
+        result = '-' + result
+    
+    return result
+
+def extract_time_components(td):
+    """
+    Extract individual time components from timedelta
+    Returns: (days, hours, minutes, seconds) as integers
+    """
+    if pd.isna(td):
+        return None, None, None, None
+    
+    total_seconds = int(td.total_seconds())
+    is_negative = total_seconds < 0
+    total_seconds = abs(total_seconds)
+    
+    days = total_seconds // 86400
+    hours = (total_seconds % 86400) // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+    
+    # Apply negative sign to days if the difference is negative
+    if is_negative:
+        days = -days if days > 0 else 0
+        if days == 0:
+            hours = -hours if hours > 0 else 0
+            if hours == 0:
+                minutes = -minutes if minutes > 0 else 0
+                if minutes == 0:
+                    seconds = -seconds
+    
+    return int(days), int(hours), int(minutes), int(seconds)
+
+def process_data(input_file, output_file=None):
+    """
+    Process Excel file with datetime columns and calculate differences
+    
+    Parameters:
+    -----------
+    input_file : str
+        Path to input Excel file
+    output_file : str, optional
+        Path to output Excel file. If None, will use input filename with '_cleaned' suffix
+    """
+    
+    print(f"Reading data from: {input_file}")
+    
+    try:
+        # Read the Excel file
+        df = pd.read_excel(input_file)
+        print(f"✅ Successfully read {len(df)} rows")
+        
+    except FileNotFoundError:
+        print(f"❌ Error: File not found - {input_file}")
+        return
+    except Exception as e:
+        print(f"❌ Error reading file: {e}")
+        return
+    
+    # Display column names
+    print(f"\nColumns found: {list(df.columns)}")
+    
+    # Check for required columns (adjust these names based on your actual column names)
+    if 'sys_created_on_x' not in df.columns or 'end_date' not in df.columns:
+        print("\n⚠️  Warning: Expected columns not found!")
+        print("Looking for: 'sys_created_on_x' and 'end_date'")
+        print(f"Found: {list(df.columns)}")
+        print("\nPlease ensure your Excel file has these column names, or modify the script.")
+        return
+    
+    # Parse datetime columns
+    print("\nParsing datetime columns...")
+    df['sys_created_on_x_clean'] = df['sys_created_on_x'].apply(parse_datetime)
+    df['end_date_clean'] = df['end_date'].apply(parse_datetime)
+    
+    # Calculate the difference
+    print("Calculating differences...")
+    df['difference_timedelta'] = df['end_date_clean'] - df['sys_created_on_x_clean'] 
+    
+    # Convert to different units
+    df['difference_seconds'] = df['difference_timedelta'].dt.total_seconds()
+    df['difference_minutes'] = df['difference_seconds'] / 60
+    df['difference_hours'] = df['difference_minutes'] / 60
+    df['difference_days'] = df['difference_hours'] / 24
+    
+    # Create human-readable format
+    df['difference_formatted'] = df['difference_timedelta'].apply(format_timedelta)
+    
+    # Extract individual time components
+    df[['diff_days', 'diff_hours', 'diff_minutes', 'diff_seconds']] = df['difference_timedelta'].apply(
+        lambda x: pd.Series(extract_time_components(x))
+    )
+    
+    # Create output dataframe with cleaned data
+    output_df = pd.DataFrame({
+        'sys_created_on_x_original': df['sys_created_on_x'],
+        'sys_created_on_x_clean': df['sys_created_on_x_clean'],
+        'end_date_original': df['end_date'],
+        'end_date_clean': df['end_date_clean'],
+        'total_difference': df['difference_formatted'],
+        'days': df['diff_days'].astype('Int64'),  # Int64 allows NaN values
+        'hours': df['diff_hours'].astype('Int64'),
+        'minutes': df['diff_minutes'].astype('Int64'),
+        'seconds': df['diff_seconds'].astype('Int64'),
+        'total_hours': df['difference_hours'].round(2),
+        'total_minutes': df['difference_minutes'].round(2),
+        'total_seconds': df['difference_seconds'].round(2),
+    })
+    
+    # Generate output filename if not provided
+    if output_file is None:
+        if input_file.endswith('.xlsx'):
+            output_file = input_file.replace('.xlsx', '_cleaned.xlsx')
+        elif input_file.endswith('.xls'):
+            output_file = input_file.replace('.xls', '_cleaned.xlsx')
+        else:
+            output_file = input_file + '_cleaned.xlsx'
+    
+    # Save to Excel
+    try:
+        output_df.to_excel(output_file, index=False, engine='openpyxl')
+        print(f"\n✅ Cleaned data saved to: {output_file}")
+    except Exception as e:
+        print(f"\n❌ Error saving file: {e}")
+        return
+    
+    # Print summary statistics
+    print("\n" + "="*80)
+    print("SUMMARY STATISTICS")
+    print("="*80)
+    print(f"Total records: {len(df)}")
+    print(f"Records with both dates: {df['difference_timedelta'].notna().sum()}")
+    print(f"Records with missing outage time: {df['end_date_clean'].isna().sum()}")
+    print(f"Records with parsing errors in sys_created_on_x: {df['sys_created_on_x_clean'].isna().sum()}")
+    
+    # Statistics on differences (only for valid records)
+    valid_diffs = df['difference_hours'].dropna()
+    if len(valid_diffs) > 0:
+        print(f"\n--- Time Difference Statistics (in hours) ---")
+        print(f"Mean: {valid_diffs.mean():.2f} hours")
+        print(f"Median: {valid_diffs.median():.2f} hours")
+        print(f"Min: {valid_diffs.min():.2f} hours")
+        print(f"Max: {valid_diffs.max():.2f} hours")
+        print(f"Std Dev: {valid_diffs.std():.2f} hours")
+    
+    # Show some examples
+    print("\n" + "="*80)
+    print("SAMPLE RECORDS (First 10)")
+    print("="*80)
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', None)
+    print(output_df.head(10).to_string(index=False))
+    
+    # Show records with missing outage time
+    print("\n" + "="*80)
+    print("RECORDS WITH MISSING OUTAGE TIME (First 5)")
+    print("="*80)
+    missing_outage = output_df[output_df['end_date_clean'].isna()].head(5)
+    if len(missing_outage) > 0:
+        print(missing_outage.to_string(index=False))
+    else:
+        print("No records with missing outage time")
+    
+    # Show records with largest differences
+    print("\n" + "="*80)
+    print("RECORDS WITH LARGEST TIME DIFFERENCES (Top 5)")
+    print("="*80)
+    largest_diffs = output_df.nlargest(5, 'total_hours')
+    print(largest_diffs[['sys_created_on_x_original', 'end_date_original', 
+                        'total_difference', 'days', 'hours', 'minutes', 'seconds']].to_string(index=False))
+    
+    # Show records with smallest/negative differences
+    print("\n" + "="*80)
+    print("RECORDS WITH SMALLEST/NEGATIVE TIME DIFFERENCES (Bottom 5)")
+    print("="*80)
+    smallest_diffs = output_df.nsmallest(5, 'total_hours')
+    print(smallest_diffs[['sys_created_on_x_original', 'end_date_original', 
+                         'total_difference', 'days', 'hours', 'minutes', 'seconds']].to_string(index=False))
+    
+    print("\n" + "="*80)
+    print("✅ PROCESSING COMPLETE!")
+    print("="*80)
+
+
+if __name__ == "__main__":
+    # Check if input file is provided as command line argument
+    if len(sys.argv) > 1:
+        input_file = sys.argv[1]
+        output_file = sys.argv[2] if len(sys.argv) > 2 else None
+        process_data(input_file, output_file)
+    else:
+        # Example usage
+        print("="*80)
+        print("DATETIME DIFFERENCE CALCULATOR")
+        print("="*80)
+        print("\nUsage:")
+        print("  python process_excel_data.py <input_file.xlsx> [output_file.xlsx]")
+        print("\nExample:")
+        print("  python process_excel_data.py my_data.xlsx")
+        print("  python process_excel_data.py my_data.xlsx cleaned_output.xlsx")
+        print("\nExpected columns in Excel file:")
+        print("  - sys_created_on_x")
+        print("  - end_date")
+        print("\nThe script will:")
+        print("  1. Read your Excel file")
+        print("  2. Parse datetime columns (handles multiple formats)")
+        print("  3. Calculate time differences")
+        print("  4. Save cleaned data to a new Excel file")
+        print("  5. Display summary statistics")
+        print("="*80)
+        
+        # If you want to hardcode a filename for testing, uncomment below:
+        input_file = 'C:/Users/2019778/OneDrive - Standard Chartered Bank/Documents/Downloads/work/IPM_Audit/coe/c1/c1.2/incident_change.xlsx'
+        process_data(input_file)
