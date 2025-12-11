@@ -1,2 +1,583 @@
-incident.number	incident.impact	incident.priority	sys_created_on_x_original	sys_created_on_x_clean	end_date_original	end_date_clean	change.number	change.impact	change.priority	total_difference	days	hours	minutes	seconds	total_hours	total_minutes	total_seconds
-I44772	3 - Moderate / Limited	3	14-10-2024 01:00:26	2024-10-14 01:00:26	29-08-2025 01:00:00	2025-08-29 01:00:00	C9902796	3 - Low	4 - Low	318d 23h 59m 34s	318	23	59	34	7655.99	459359.57	27561574
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from collections import Counter
+import warnings
+warnings.filterwarnings('ignore')
+
+def perform_incident_change_timediff_rca(sample_file_path):
+    """
+    Perform root cause analysis on sampled incident-change records with POSITIVE 
+    time differences between incident creation and change end date.
+    
+    Parameters:
+    -----------
+    sample_file_path : str
+        Path to Excel file containing sampled records (incident-change pairs)
+        
+    Returns:
+    --------
+    dict
+        Dictionary containing RCA findings and metrics
+    """
+    
+    rca_results = {
+        'patterns': {},
+        'root_causes': [],
+        'recommendations': [],
+        'time_buckets': {},
+        'detailed_analysis': []
+    }
+    
+    print("=" * 80)
+    print("ROOT CAUSE ANALYSIS - INCIDENT-CHANGE TIME DIFFERENCES")
+    print("=" * 80)
+    
+    # Read the sample data
+    try:
+        df = pd.read_excel(sample_file_path)
+        print(f"\n✅ Successfully loaded {len(df)} sampled records")
+    except Exception as e:
+        print(f"❌ Error reading file: {e}")
+        return None
+    
+    print(f"Columns: {list(df.columns)}\n")
+    
+    # Convert datetime columns
+    df['sys_created_on_x_clean'] = pd.to_datetime(df['sys_created_on_x_clean'], errors='coerce')
+    df['end_date_clean'] = pd.to_datetime(df['end_date_clean'], errors='coerce')
+    
+    # Verify all records have positive differences
+    if 'total_hours' in df.columns:
+        negative_count = (df['total_hours'] < 0).sum()
+        zero_count = (df['total_hours'] == 0).sum()
+        if negative_count > 0 or zero_count > 0:
+            print(f"⚠️  Warning: Found {negative_count} negative and {zero_count} zero differences")
+            print("Filtering to only positive differences...")
+            df = df[df['total_hours'] > 0].reset_index(drop=True)
+            print(f"Remaining records: {len(df)}")
+    
+    # 1. SAMPLE OVERVIEW
+    print("\n" + "=" * 80)
+    print("1. SAMPLE OVERVIEW")
+    print("=" * 80)
+    
+    print(f"\nTotal sampled incident-change pairs: {len(df)}")
+    print(f"Incident date range: {df['sys_created_on_x_clean'].min()} to {df['sys_created_on_x_clean'].max()}")
+    print(f"Change end date range: {df['end_date_clean'].min()} to {df['end_date_clean'].max()}")
+    print(f"\nUnique incidents: {df['incident.number'].nunique()}")
+    print(f"Unique changes: {df['change.number'].nunique()}")
+    
+    rca_results['patterns']['sample_info'] = {
+        'total_samples': len(df),
+        'unique_incidents': df['incident.number'].nunique(),
+        'unique_changes': df['change.number'].nunique(),
+        'incident_date_range_start': str(df['sys_created_on_x_clean'].min()),
+        'incident_date_range_end': str(df['sys_created_on_x_clean'].max())
+    }
+    
+    # 2. IMPACT & PRIORITY ANALYSIS
+    print("\n" + "=" * 80)
+    print("2. IMPACT & PRIORITY ANALYSIS")
+    print("=" * 80)
+    
+    print("\n--- Incident Impact Distribution ---")
+    incident_impact_dist = df['incident.impact'].value_counts()
+    for impact, count in incident_impact_dist.items():
+        print(f"  {impact}: {count} records ({count/len(df)*100:.1f}%)")
+    
+    print("\n--- Incident Priority Distribution ---")
+    incident_priority_dist = df['incident.priority'].value_counts()
+    for priority, count in incident_priority_dist.items():
+        print(f"  Priority {priority}: {count} records ({count/len(df)*100:.1f}%)")
+    
+    print("\n--- Change Impact Distribution ---")
+    change_impact_dist = df['change.impact'].value_counts()
+    for impact, count in change_impact_dist.items():
+        print(f"  {impact}: {count} records ({count/len(df)*100:.1f}%)")
+    
+    print("\n--- Change Priority Distribution ---")
+    change_priority_dist = df['change.priority'].value_counts()
+    for priority, count in change_priority_dist.items():
+        print(f"  Priority {priority}: {count} records ({count/len(df)*100:.1f}%)")
+    
+    rca_results['patterns']['impact_priority'] = {
+        'incident_impact': incident_impact_dist.to_dict(),
+        'incident_priority': incident_priority_dist.to_dict(),
+        'change_impact': change_impact_dist.to_dict(),
+        'change_priority': change_priority_dist.to_dict()
+    }
+    
+    # Check for high-impact incidents with long delays
+    high_impact_incidents = df[df['incident.impact'].str.contains('High|Critical', case=False, na=False)]
+    if len(high_impact_incidents) > 0:
+        avg_delay_high_impact = high_impact_incidents['total_hours'].mean()
+        if avg_delay_high_impact > 24:
+            rca_results['root_causes'].append({
+                'cause': 'High/Critical impact incidents have significant time delays',
+                'evidence': f"{len(high_impact_incidents)} high-impact incidents with avg delay of {avg_delay_high_impact:.1f} hours",
+                'severity': 'High',
+                'category': 'Business Impact',
+                'impact': 'Critical incidents may not be tracked promptly in change management'
+            })
+    
+    # 3. TIME DIFFERENCE DISTRIBUTION ANALYSIS
+    print("\n" + "=" * 80)
+    print("3. TIME DIFFERENCE DISTRIBUTION ANALYSIS")
+    print("=" * 80)
+    
+    # Categorize by time ranges
+    time_categories = pd.cut(df['total_hours'], 
+                            bins=[0, 1, 4, 8, 24, 72, 168, 720, float('inf')],
+                            labels=['<1 hour', '1-4 hours', '4-8 hours', '8-24 hours', 
+                                   '1-3 days', '3-7 days', '7-30 days', '>30 days'])
+    
+    time_dist = time_categories.value_counts().sort_index()
+    
+    print("\nTime Difference Distribution:")
+    for category, count in time_dist.items():
+        pct = count / len(df) * 100
+        print(f"  {category:15}: {count:3} records ({pct:5.1f}%)")
+    
+    rca_results['time_buckets'] = time_dist.to_dict()
+    
+    # Statistical summary
+    print(f"\n--- Statistical Summary (hours) ---")
+    print(f"Mean:   {df['total_hours'].mean():.2f} hours ({df['total_hours'].mean()/24:.2f} days)")
+    print(f"Median: {df['total_hours'].median():.2f} hours ({df['total_hours'].median()/24:.2f} days)")
+    print(f"Std:    {df['total_hours'].std():.2f} hours")
+    print(f"Min:    {df['total_hours'].min():.2f} hours")
+    print(f"Max:    {df['total_hours'].max():.2f} hours ({df['total_hours'].max()/24:.2f} days)")
+    print(f"25th percentile: {df['total_hours'].quantile(0.25):.2f} hours")
+    print(f"75th percentile: {df['total_hours'].quantile(0.75):.2f} hours")
+    print(f"95th percentile: {df['total_hours'].quantile(0.95):.2f} hours")
+    
+    rca_results['patterns']['statistics'] = {
+        'mean_hours': round(df['total_hours'].mean(), 2),
+        'mean_days': round(df['total_hours'].mean()/24, 2),
+        'median_hours': round(df['total_hours'].median(), 2),
+        'median_days': round(df['total_hours'].median()/24, 2),
+        'std_hours': round(df['total_hours'].std(), 2),
+        'min_hours': round(df['total_hours'].min(), 2),
+        'max_hours': round(df['total_hours'].max(), 2),
+        'max_days': round(df['total_hours'].max()/24, 2),
+        'p25_hours': round(df['total_hours'].quantile(0.25), 2),
+        'p75_hours': round(df['total_hours'].quantile(0.75), 2),
+        'p95_hours': round(df['total_hours'].quantile(0.95), 2)
+    }
+    
+    # 4. PATTERN IDENTIFICATION & ROOT CAUSE ANALYSIS
+    print("\n" + "=" * 80)
+    print("4. PATTERN IDENTIFICATION & ROOT CAUSE ANALYSIS")
+    print("=" * 80)
+    
+    # Pattern 1: Very short delays (<1 hour)
+    very_short = df[df['total_hours'] < 1]
+    if len(very_short) > 0:
+        pct = len(very_short) / len(df) * 100
+        print(f"\n📊 Pattern: Very Short Delays (<1 hour)")
+        print(f"   Count: {len(very_short)} records ({pct:.1f}%)")
+        print(f"   Average: {very_short['total_hours'].mean()*60:.1f} minutes")
+        
+        if pct >= 15:
+            rca_results['root_causes'].append({
+                'cause': 'Incident created very close to change end time',
+                'evidence': f"{len(very_short)} records ({pct:.1f}%) with <1 hour difference",
+                'severity': 'Medium',
+                'category': 'Timing/Process',
+                'impact': 'May indicate incidents logged after change completion or retroactive linking',
+                'avg_delay': f"{very_short['total_hours'].mean()*60:.1f} minutes"
+            })
+    
+    # Pattern 2: Short delays (1-4 hours)
+    short = df[(df['total_hours'] >= 1) & (df['total_hours'] < 4)]
+    if len(short) > 0:
+        pct = len(short) / len(df) * 100
+        print(f"\n📊 Pattern: Short Delays (1-4 hours)")
+        print(f"   Count: {len(short)} records ({pct:.1f}%)")
+        print(f"   Average: {short['total_hours'].mean():.2f} hours")
+    
+    # Pattern 3: Business hours delay (4-24 hours)
+    business = df[(df['total_hours'] >= 4) & (df['total_hours'] < 24)]
+    if len(business) > 0:
+        pct = len(business) / len(df) * 100
+        print(f"\n📊 Pattern: Business Hours Delay (4-24 hours)")
+        print(f"   Count: {len(business)} records ({pct:.1f}%)")
+        print(f"   Average: {business['total_hours'].mean():.2f} hours")
+        
+        if pct >= 20:
+            rca_results['root_causes'].append({
+                'cause': 'Same-day but delayed incident-change linking',
+                'evidence': f"{len(business)} records ({pct:.1f}%) with 4-24 hour difference",
+                'severity': 'Medium',
+                'category': 'Process Gap',
+                'impact': 'Incidents created hours after change completion',
+                'avg_delay': f"{business['total_hours'].mean():.2f} hours"
+            })
+    
+    # Pattern 4: Multi-day delays (1-7 days)
+    multi_day = df[(df['total_hours'] >= 24) & (df['total_hours'] < 168)]
+    if len(multi_day) > 0:
+        pct = len(multi_day) / len(df) * 100
+        avg_days = multi_day['total_hours'].mean() / 24
+        print(f"\n📊 Pattern: Multi-Day Delays (1-7 days)")
+        print(f"   Count: {len(multi_day)} records ({pct:.1f}%)")
+        print(f"   Average: {avg_days:.1f} days")
+        
+        if pct >= 15:
+            rca_results['root_causes'].append({
+                'cause': 'Substantial delay between change completion and incident creation',
+                'evidence': f"{len(multi_day)} records ({pct:.1f}%) with 1-7 day difference",
+                'severity': 'High',
+                'category': 'Process/Compliance',
+                'impact': 'Incidents logged days after change completion - timeline integrity concern',
+                'avg_delay': f"{avg_days:.1f} days"
+            })
+    
+    # Pattern 5: Extended delays (7-30 days)
+    extended = df[(df['total_hours'] >= 168) & (df['total_hours'] < 720)]
+    if len(extended) > 0:
+        pct = len(extended) / len(df) * 100
+        avg_days = extended['total_hours'].mean() / 24
+        print(f"\n📊 Pattern: Extended Delays (7-30 days)")
+        print(f"   Count: {len(extended)} records ({pct:.1f}%)")
+        print(f"   Average: {avg_days:.1f} days")
+        
+        if len(extended) > 0:
+            rca_results['root_causes'].append({
+                'cause': 'Major delay between change end and incident creation',
+                'evidence': f"{len(extended)} records ({pct:.1f}%) with 7-30 day difference",
+                'severity': 'High',
+                'category': 'Compliance/Audit Risk',
+                'impact': 'Significant delays suggest retroactive documentation or data quality issues',
+                'avg_delay': f"{avg_days:.1f} days"
+            })
+    
+    # Pattern 6: Extreme delays (>30 days)
+    extreme = df[df['total_hours'] >= 720]
+    if len(extreme) > 0:
+        pct = len(extreme) / len(df) * 100
+        avg_days = extreme['total_hours'].mean() / 24
+        print(f"\n📊 Pattern: Extreme Delays (>30 days)")
+        print(f"   Count: {len(extreme)} records ({pct:.1f}%)")
+        print(f"   Average: {avg_days:.1f} days")
+        print(f"   Max: {extreme['total_hours'].max()/24:.1f} days")
+        
+        if len(extreme) > 0:
+            rca_results['root_causes'].append({
+                'cause': 'CRITICAL: Extreme delay between change end and incident creation',
+                'evidence': f"{len(extreme)} records ({pct:.1f}%) with >30 day difference",
+                'severity': 'Critical',
+                'category': 'Data Integrity/Audit Risk',
+                'impact': 'Incidents created months after change completion - major audit concern',
+                'avg_delay': f"{avg_days:.1f} days",
+                'max_delay': f"{extreme['total_hours'].max()/24:.1f} days"
+            })
+    
+    # 5. TEMPORAL PATTERNS
+    print("\n" + "=" * 80)
+    print("5. TEMPORAL PATTERNS ANALYSIS")
+    print("=" * 80)
+    
+    # Extract time components for incidents
+    df['incident_hour'] = df['sys_created_on_x_clean'].dt.hour
+    df['incident_day_of_week'] = df['sys_created_on_x_clean'].dt.day_name()
+    df['incident_month'] = df['sys_created_on_x_clean'].dt.month_name()
+    df['incident_year'] = df['sys_created_on_x_clean'].dt.year
+    
+    # Hour of day analysis
+    print("\n--- Incident Creation by Hour of Day ---")
+    business_hours = df[(df['incident_hour'] >= 9) & (df['incident_hour'] <= 17)]
+    after_hours = df[(df['incident_hour'] < 9) | (df['incident_hour'] > 17)]
+    
+    print(f"Business hours (9 AM - 5 PM): {len(business_hours)} records ({len(business_hours)/len(df)*100:.1f}%)")
+    print(f"After hours: {len(after_hours)} records ({len(after_hours)/len(df)*100:.1f}%)")
+    
+    rca_results['patterns']['temporal'] = {
+        'business_hours_pct': round(len(business_hours)/len(df)*100, 1),
+        'after_hours_pct': round(len(after_hours)/len(df)*100, 1)
+    }
+    
+    # Day of week analysis
+    print("\n--- Incident Creation by Day of Week ---")
+    dow_dist = df['incident_day_of_week'].value_counts()
+    for day, count in dow_dist.items():
+        print(f"  {day:10}: {count:3} records ({count/len(df)*100:5.1f}%)")
+    
+    # Month analysis
+    print("\n--- Incident Creation by Month ---")
+    month_dist = df['incident_month'].value_counts()
+    for month, count in list(month_dist.items())[:5]:
+        print(f"  {month:10}: {count:3} records")
+    
+    # 6. OUTLIER ANALYSIS
+    print("\n" + "=" * 80)
+    print("6. OUTLIER ANALYSIS")
+    print("=" * 80)
+    
+    # Using IQR method
+    Q1 = df['total_hours'].quantile(0.25)
+    Q3 = df['total_hours'].quantile(0.75)
+    IQR = Q3 - Q1
+    outlier_threshold = Q3 + 1.5 * IQR
+    
+    outliers = df[df['total_hours'] > outlier_threshold]
+    
+    print(f"\nOutlier threshold (Q3 + 1.5*IQR): {outlier_threshold:.2f} hours ({outlier_threshold/24:.1f} days)")
+    print(f"Number of outliers: {len(outliers)} ({len(outliers)/len(df)*100:.1f}%)")
+    
+    if len(outliers) > 0:
+        print(f"Average outlier delay: {outliers['total_hours'].mean():.2f} hours ({outliers['total_hours'].mean()/24:.1f} days)")
+        print(f"Largest delay: {outliers['total_hours'].max():.2f} hours ({outliers['total_hours'].max()/24:.1f} days)")
+        
+        rca_results['patterns']['outliers'] = {
+            'count': len(outliers),
+            'percentage': round(len(outliers)/len(df)*100, 1),
+            'avg_hours': round(outliers['total_hours'].mean(), 2),
+            'avg_days': round(outliers['total_hours'].mean()/24, 2),
+            'max_hours': round(outliers['total_hours'].max(), 2),
+            'max_days': round(outliers['total_hours'].max()/24, 2),
+            'threshold_hours': round(outlier_threshold, 2)
+        }
+        
+        # Show top 5 outliers
+        print("\n--- Top 5 Extreme Delays ---")
+        top_outliers = df.nlargest(5, 'total_hours')[['incident.number', 'change.number', 
+                                                        'incident.impact', 'change.impact',
+                                                        'total_difference', 'days', 'total_hours']]
+        print(top_outliers.to_string(index=False))
+    
+    # 7. DETAILED RECORD-BY-RECORD ANALYSIS
+    print("\n" + "=" * 80)
+    print("7. DETAILED RECORD-BY-RECORD ANALYSIS")
+    print("=" * 80)
+    
+    for idx, row in df.iterrows():
+        hours = row['total_hours']
+        days = hours / 24
+        
+        # Classify each record
+        if hours < 1:
+            classification = 'Very Short Delay'
+            likely_cause = 'Incident logged immediately after change completion'
+            severity = 'Low'
+            concern = 'Possible retroactive linking'
+        elif hours < 4:
+            classification = 'Short Delay'
+            likely_cause = 'Incident logged shortly after change, same shift'
+            severity = 'Low'
+            concern = 'Acceptable timing'
+        elif hours < 8:
+            classification = 'Moderate Delay'
+            likely_cause = 'Incident logged after change, possibly different shift'
+            severity = 'Medium'
+            concern = 'Some delay in documentation'
+        elif hours < 24:
+            classification = 'Business Day Delay'
+            likely_cause = 'Incident logged same day but hours after change'
+            severity = 'Medium'
+            concern = 'Delayed documentation'
+        elif hours < 72:
+            classification = 'Multi-Day Delay'
+            likely_cause = 'Incident logged 1-3 days after change completion'
+            severity = 'High'
+            concern = 'Significant delay - process gap'
+        elif hours < 168:
+            classification = 'Week-Long Delay'
+            likely_cause = 'Incident logged 3-7 days after change'
+            severity = 'High'
+            concern = 'Major delay - audit concern'
+        elif hours < 720:
+            classification = 'Extended Delay (7-30 days)'
+            likely_cause = 'Incident logged weeks after change completion'
+            severity = 'Critical'
+            concern = 'Retroactive logging - data integrity issue'
+        else:
+            classification = 'Extreme Delay (>30 days)'
+            likely_cause = 'Incident logged months after change completion'
+            severity = 'Critical'
+            concern = 'MAJOR audit risk - likely data quality issue'
+        
+        rca_results['detailed_analysis'].append({
+            'record_index': idx + 1,
+            'incident_number': row['incident.number'],
+            'change_number': row['change.number'],
+            'incident_impact': row['incident.impact'],
+            'incident_priority': row['incident.priority'],
+            'change_impact': row['change.impact'],
+            'change_priority': row['change.priority'],
+            'incident_created': str(row['sys_created_on_x_original']),
+            'change_end': str(row['end_date_original']),
+            'time_difference': row['total_difference'],
+            'total_hours': round(hours, 2),
+            'total_days': round(days, 2),
+            'classification': classification,
+            'likely_cause': likely_cause,
+            'severity': severity,
+            'concern': concern
+        })
+        
+        if idx < 10:  # Print first 10
+            print(f"\nRecord {idx + 1}:")
+            print(f"  Incident: {row['incident.number']} | Change: {row['change.number']}")
+            print(f"  Incident Impact: {row['incident.impact']} | Change Impact: {row['change.impact']}")
+            print(f"  Time Difference: {row['total_difference']} ({hours:.2f} hours / {days:.2f} days)")
+            print(f"  Classification: {classification}")
+            print(f"  Likely Cause: {likely_cause}")
+            print(f"  Concern: {concern}")
+    
+    if len(df) > 10:
+        print(f"\n... and {len(df) - 10} more records (see detailed export)")
+    
+    # 8. GENERATE RECOMMENDATIONS
+    print("\n" + "=" * 80)
+    print("8. ROOT CAUSE SUMMARY & RECOMMENDATIONS")
+    print("=" * 80)
+    
+    print("\nIdentified Root Causes:")
+    for i, rc in enumerate(rca_results['root_causes'], 1):
+        print(f"\n{i}. [{rc['severity']}] {rc['cause']}")
+        print(f"   Category: {rc['category']}")
+        print(f"   Evidence: {rc['evidence']}")
+        print(f"   Impact: {rc['impact']}")
+        if 'avg_delay' in rc:
+            print(f"   Average Delay: {rc['avg_delay']}")
+        if 'max_delay' in rc:
+            print(f"   Maximum Delay: {rc['max_delay']}")
+    
+    # Generate recommendations
+    recommendations = generate_recommendations(rca_results, df)
+    rca_results['recommendations'] = recommendations
+    
+    print("\n" + "=" * 80)
+    print("RECOMMENDATIONS (Prioritized)")
+    print("=" * 80)
+    
+    for i, rec in enumerate(recommendations, 1):
+        print(f"\n{rec['priority']} - Recommendation {i}:")
+        print(f"  {rec['recommendation']}")
+        print(f"  Details: {rec['details']}")
+        print(f"  Expected Impact: {rec['impact']}")
+    
+    return rca_results
+
+
+def generate_recommendations(rca_results, df):
+    """Generate targeted recommendations based on findings."""
+    recommendations = []
+    
+    avg_hours = rca_results['patterns']['statistics']['mean_hours']
+    avg_days = rca_results['patterns']['statistics']['mean_days']
+    median_days = rca_results['patterns']['statistics']['median_days']
+    
+    # Critical: Extreme delays
+    extreme_delays = df[df['total_hours'] >= 720]
+    if len(extreme_delays) > 0:
+        recommendations.append({
+            'priority': 'P1',
+            'recommendation': 'Immediate investigation of extreme delay cases (>30 days)',
+            'details': f'Found {len(extreme_delays)} incident-change pairs with >30 day delays (avg: {extreme_delays["total_hours"].mean()/24:.1f} days). These require immediate review for data integrity and audit compliance.',
+            'impact': 'Address critical audit risks and potential data quality issues'
+        })
+    
+    # High: Average delay over 7 days
+    if avg_days > 7:
+        recommendations.append({
+            'priority': 'P1',
+            'recommendation': 'Establish incident-change linking process requirement',
+            'details': f'Average delay is {avg_days:.1f} days. Implement policy requiring incidents to reference related changes within 24 hours of change completion.',
+            'impact': 'Reduce average delay by 70-80%, improve timeline accuracy'
+        })
+    elif avg_days > 3:
+        recommendations.append({
+            'priority': 'P2',
+            'recommendation': 'Implement automated incident-change correlation',
+            'details': f'Average delay is {avg_days:.1f} days. Deploy automated system to suggest change linkages when incidents are created.',
+            'impact': 'Reduce manual effort and improve linking timeliness'
+        })
+    
+    # Recommendation for outliers
+    if 'outliers' in rca_results['patterns']:
+        outlier_count = rca_results['patterns']['outliers']['count']
+        if outlier_count > 0:
+            recommendations.append({
+                'priority': 'P1',
+                'recommendation': 'Conduct root cause analysis on statistical outliers',
+                'details': f'{outlier_count} records exceed {rca_results["patterns"]["outliers"]["threshold_hours"]:.1f} hours ({rca_results["patterns"]["outliers"]["threshold_hours"]/24:.1f} days). Investigate each case individually.',
+                'impact': 'Identify systemic issues causing extreme delays'
+            })
+    
+    # Process recommendations based on root causes
+    critical_causes = [rc for rc in rca_results['root_causes'] if rc['severity'] == 'Critical']
+    high_causes = [rc for rc in rca_results['root_causes'] if rc['severity'] == 'High']
+    
+    if critical_causes:
+        recommendations.append({
+            'priority': 'P1',
+            'recommendation': 'Address critical data integrity and audit compliance gaps',
+            'details': f'Found {len(critical_causes)} critical severity issues including incidents created months after change completion. Immediate remediation required.',
+            'impact': 'Mitigate audit findings and compliance violations'
+        })
+    
+    if high_causes:
+        recommendations.append({
+            'priority': 'P1',
+            'recommendation': 'Implement real-time change-incident integration',
+            'details': 'Integrate change and incident management systems to enable real-time linking during incident creation workflow.',
+            'impact': 'Eliminate manual delays in associating incidents with changes'
+        })
+    
+    # Impact/Priority specific
+    high_impact = df[df['incident.impact'].str.contains('High|Critical|1 -', case=False, na=False)]
+    if len(high_impact) > 0:
+        avg_delay_high = high_impact['total_hours'].mean() / 24
+        if avg_delay_high > 1:
+            recommendations.append({
+                'priority': 'P1',
+                'recommendation': 'Prioritize high-impact incident-change linking',
+                'details': f'{len(high_impact)} high-impact incidents have average delay of {avg_delay_high:.1f} days. Critical incidents require immediate change association.',
+                'impact': 'Improve tracking and accountability for major incidents'
+            })
+    
+    # General process recommendations
+    recommendations.append({
+        'priority': 'P2',
+        'recommendation': 'Establish incident-change linking SLA',
+        'details': 'Define maximum acceptable time (e.g., 4 hours) between change end and incident creation/linking. Monitor compliance in weekly dashboards.',
+        'impact': 'Create measurable accountability for timely documentation'
+    })
+    
+    recommendations.append({
+        'priority': 'P2',
+        'recommendation': 'Training on change-incident relationship documentation',
+        'details': 'Train incident managers and change coordinators on importance of timely linking for audit trail and root cause analysis.',
+        'impact': 'Improve team awareness and process compliance'
+    })
+    
+    # Data quality
+    recommendations.append({
+        'priority': 'P3',
+        'recommendation': 'Implement validation rules in ITSM tool',
+        'details': 'Add system validations to flag incidents created >24 hours after related change end date. Require justification for delayed linking.',
+            'impact': 'Catch timing issues at point of entry, improve data quality'
+        })
+    
+    # Monitoring
+    recommendations.append({
+        'priority': 'P3',
+        'recommendation': 'Establish ongoing monitoring and reporting',
+        'details': 'Create monthly dashboard tracking: average delay, outlier count, high-impact delays, and trend analysis.',
+        'impact': 'Enable continuous improvement and early detection of process degradation'
+    })
+    
+    return recommendations
+
+
+def create_visualizations(df, rca_results):
+    """Create comprehensive visualizations for the RCA."""
+    
+    fig = plt.figure(figsize=(18, 12))
+    gs = fig.add_gridspec(3, 3, hspace=0.35, wspace=0.3)
+    
+    fig.suptitle('Incident
